@@ -124,23 +124,26 @@ struct BigFloat {
   }
 
   BigFloat operator+(BigFloat b) const {
-    const size_t total_bytes = size_exponent + size_mantissa;
-    const size_t total_other = b.size_mantissa + b.size_exponent;
-    if (total_bytes < total_other)
-      return to_precision(total_other) + b;
-    else if (total_bytes > total_other)
-      b = b.to_precision(total_bytes);
-    return BigFloat(0.0);
+    BigFloat c = BigFloat(*this);
+    c += b;
+    return c;
   }
-  BigFloat operator+=(BigFloat b) const {
+  void operator+=(BigFloat b) {
     const size_t total_bytes = size_exponent + size_mantissa;
     const size_t total_other = b.size_mantissa + b.size_exponent;
-    if (total_bytes < total_other)
-      return to_precision(total_other) + b;
-    else if (total_bytes > total_other)
+    if (total_bytes != total_other)
       b = b.to_precision(total_bytes);
-
-    return BigFloat(0.0);
+    const long shift = calculate_mantissa_shift(b);
+    const long shift_a = shift < 0 ? -shift : 0;
+    const long shift_b = shift > 0 ? shift : 0;
+    if (shift_a != 0) {
+      // copy new exponent of b
+      for (size_t i = 0; i < size_exponent; i++)
+        data[size_mantissa + i] = b.data[size_mantissa + i];
+    }
+    // now we can carry out integer addition of mantissa
+    perform_mantissa_addition(b, shift_a, shift_b);
+    // TODO test on sign
   }
   double operator*() const {
     // copy the exponent
@@ -178,6 +181,99 @@ protected:
   char sign = 1;
   std::vector<char> data; // exponent, mantissa, i.e. 0 starts at the mantissa,
                           // it indexes as for byte operations
+  size_t calculate_mantissa_shift(const BigFloat &b) const {
+    // exponent may differ -> the one with the lower exponent has to be right
+    // shifted to match the higher
+    // count difference between this and b in exponent. If > 0 -> b has to be
+    // right shifted, if < 0 this has to be right shifted
+    long shift = 0;
+    for (size_t i = 0; i < size_exponent * 8; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
+      const char data_b = (b.data[size_mantissa + byte] & (1l << bit)) >> bit;
+      if (data_a > data_b) {
+        // this has a higher bit here
+        shift += i;
+      } else if (data_a < data_b) {
+        // b has a higher bit here
+        shift -= i;
+      }
+    }
+    return shift;
+  }
+  void perform_mantissa_addition(BigFloat &b, size_t shift_a, size_t shift_b) {
+    for (int i = data.size() - 1; i >= 0; i--)
+      std::cout << std::bitset<8>(data[i]);
+    std::cout << std::endl;
+    for (int i = data.size() - 1; i >= 0; i--)
+      std::cout << std::bitset<8>(b.data[i]);
+    std::cout << std::endl;
+    const size_t byte_shift_a = shift_a / 8;
+    const size_t byte_shift_b = shift_b / 8;
+    const size_t bit_shift_a = shift_a % 8;
+    const size_t bit_shift_b = shift_b % 8;
+    char carry = 0;
+    for (size_t i = 0; i < size_mantissa * 8; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      char data_a = 0;
+      // since it is 1.mantissa, the 1 appears
+      if (byte + byte_shift_a == size_mantissa && bit == bit_shift_a) {
+        data_a = 1;
+      } else if (byte + byte_shift_a < size_mantissa) {
+        // TODO correct bit shift (bit + bit_shift may be > 8!)
+        data_a = (((data[byte + byte_shift_a] & (1 << (bit + bit_shift_a)))) >>
+                  (bit + bit_shift_a));
+      }
+      char data_b = 0;
+      if (byte + byte_shift_b == size_mantissa && bit == 1) {
+        data_b = 1;
+      } else if (byte + byte_shift_b < size_mantissa) {
+        // TODO correct bit shift (bit + bit_shift may be > 8!)
+        data_b =
+            (((b.data[byte + byte_shift_b] & (1 << (bit + bit_shift_b)))) >>
+             (bit + bit_shift_b));
+      }
+      const char val = data_a + data_b + carry;
+      if (val % 2 == 0)
+        data[byte] &= ~(1 << bit);
+      else
+        data[byte] |= (1 << bit);
+      if (val > 1)
+        carry = 1;
+      else
+        carry = 0;
+    }
+    if (shift_a == 0 && shift_b == 0)
+      carry = 1;
+    // add carry to exponent and shift mantissa by 1 to right
+    for (size_t i = 1; i < size_mantissa * 8; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      const char d = (data[byte] & (1 << bit));
+      const size_t d_byte = bit == 0 ? byte - 1 : byte;
+      const char d_bit = bit == 0 ? 7 : bit - 1;
+      if (d)
+        data[d_byte] |= (1 << d_bit);
+      else
+        data[d_byte] &= ~(1 << d_bit);
+    }
+    for (size_t i = 0; i < size_exponent * 8 && carry != 0; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      const char d = (data[size_mantissa + byte] & (1 << bit));
+      if (d) {
+        data[size_mantissa + byte] &= ~(1 << bit);
+      } else {
+        carry = 0;
+        data[size_mantissa + byte] |= (1 << bit);
+      }
+    }
+    for (int i = data.size() - 1; i >= 0; i--)
+      std::cout << std::bitset<8>(data[i]);
+    std::cout << std::endl;
+  }
 };
 
 #endif
