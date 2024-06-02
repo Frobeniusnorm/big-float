@@ -16,8 +16,8 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(pi).epsilon(0.0000000001), *c);
     c = c.to_precision(16);
     CHECK_EQ(doctest::Approx(pi).epsilon(0.0000000001), *c);
-    BigFloat d(11.);
-    CHECK_EQ(doctest::Approx(11.).epsilon(0.0000000001), *d);
+    BigFloat d(0.00012345);
+    CHECK_EQ(doctest::Approx(.00012345).epsilon(0.0000000001), *d);
   }
   TEST_CASE("Addition") {
     BigFloat a(5.0);
@@ -30,7 +30,12 @@ TEST_SUITE("Floating Point semantics") {
     // more complex shifting
     BigFloat d(128.0);
     BigFloat pi(3.141592);
-    BigFloat e = d + pi;
-    CHECK_EQ(doctest::Approx(128. + 3.141592).epsilon(0.0000000001), *e);
+    CHECK_EQ(doctest::Approx(128. + 3.141592).epsilon(0.0000000001), *(d + pi));
+    CHECK_EQ(doctest::Approx(128. + 3.141592).epsilon(0.0000000001), *(pi + d));
+    // sub decimal
+    BigFloat f(0.00009876);
+    BigFloat g(12345.6789);
+    CHECK_EQ(doctest::Approx(0.00009876 + 12345.6789), *(g + f));
+    CHECK_EQ(doctest::Approx(0.00009876 + 12345.6789), *(f + g));
   }
 }
