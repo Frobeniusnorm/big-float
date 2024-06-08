@@ -157,8 +157,12 @@ struct BigFloat {
         data[size_mantissa + i] = b.data[size_mantissa + i];
     }
     // now we can carry out integer addition of mantissa
-    perform_mantissa_addition(b, shift_a, shift_b, false);
-    // TODO test on sign
+    // test on sign
+    if (sign == b.sign) {
+      perform_mantissa_addition(b, shift_a, shift_b, false);
+    } else {
+      perform_mantissa_addition(b, shift_a, shift_b, true);
+    }
   }
   void operator-=(BigFloat b) {
     const size_t total_bytes = size_exponent + size_mantissa;
@@ -174,8 +178,13 @@ struct BigFloat {
         data[size_mantissa + i] = b.data[size_mantissa + i];
     }
     // now we can carry out integer addition of mantissa
-    perform_mantissa_addition(b, shift_a, shift_b, true);
-    // TODO test on sign
+    // test on sign
+    if (sign == b.sign) {
+      perform_mantissa_addition(b, shift_a, shift_b, true);
+    } else {
+      perform_mantissa_addition(b, shift_a, shift_b, false);
+    }
+	// TODO check if a > b and stuff
   }
   double operator*() const {
     // copy the exponent
@@ -364,13 +373,7 @@ struct BigFloat {
           data[size_mantissa - 1] &= ~(1 << 7);
       }
     } else {
-      // if carry is set from before but a has no leading zero (because of
-      // shifting) the result is negative
-      // TODO
-      // if both are not shifted, but carry is 1, the result is negative
-      // TODO
-      // both leading zeros are subtracted
-      if ((shift_a == 0 && shift_b == 0 && carry == 0) ||
+      if ((shift_a == shift_b && carry == 0) ||
           (shift_a == 0 && shift_b != 0 && carry != 0)) {
         normalize();
       }

@@ -36,6 +36,9 @@ TEST_SUITE("Floating Point semantics") {
     CHECK(*c == *b);
     CHECK_EQ(doctest::Approx(1.).epsilon(0.0000000001), *c);
     CHECK_EQ(doctest::Approx(1.).epsilon(0.0000000001), *b);
+    BigFloat d(6.0);
+    BigFloat e = a - d;
+    CHECK_EQ(doctest::Approx(-1.).epsilon(0.0000000001), *e);
   }
   TEST_CASE("Wrap & Unwrap") {
     double a = 5.0;
