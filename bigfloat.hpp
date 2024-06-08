@@ -184,7 +184,7 @@ struct BigFloat {
     } else {
       perform_mantissa_addition(b, shift_a, shift_b, false);
     }
-	// TODO check if a > b and stuff
+    // TODO check if a > b and stuff
   }
   double operator*() const {
     // copy the exponent
@@ -246,10 +246,50 @@ struct BigFloat {
     return conv.val;
   }
   bool operator==(const BigFloat b) const {
-    // TODO
+    // all bits just have to be the same
+    if (b.sign != sign)
+      return false;
+    // test upper bits of exponent
+    for (size_t i = 0; i < std::min(size_exponent, b.size_exponent); i++) {
+      if (data[size_mantissa + size_exponent - 1 - i] !=
+          b.data[b.size_mantissa + b.size_exponent - 1 - i])
+        return false;
+    }
+    // test upper bits of mantissa
+    for (size_t i = 0; i < std::min(size_mantissa, b.size_mantissa); i++) {
+      if (data[size_mantissa - 1 - i] != b.data[b.size_mantissa - 1 - i])
+        return false;
+    }
     return true;
   }
-  // TODO sub, mul
+  bool operator!=(const BigFloat b) const { return !(*this == b); }
+  bool operator>(BigFloat b) const {
+    const size_t total_bytes = size_exponent + size_mantissa;
+    const size_t total_other = b.size_mantissa + b.size_exponent;
+    if (total_bytes != total_other)
+      b = b.to_precision(total_bytes);
+    const long shift = calculate_mantissa_shift(b);
+    // because value is 1.mantissa, if the exponent is smaller -> the value is
+    // smaller
+    if (shift != 0)
+      return shift > 0;
+    // a > b if a has a i s.t. i = max{i | a[i] = 1 and b[i] = 0} and b a index
+    // j s.t. j = max{j | b[j] = 1 and a[i] = 0} and i > j
+	for (long i = size_mantissa * 8 - 1; i >= 0; i--) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+	  const char data_a = data[byte] & (1 << bit);
+	  const char data_b = b.data[byte] & (1 << bit);
+	  if (data_a && !data_b)
+		return true;
+	  else if (!data_a && data_b)
+		return false;
+	}
+	// they are the same
+	return false;
+  }
+  bool operator<(BigFloat b) const { return !(*this > b) && (*this != b); }
+  // mul
   // protected:
   size_t size_mantissa; // in bytes
   size_t size_exponent; // in bytes

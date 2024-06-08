@@ -56,6 +56,28 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat d(0.00012345);
     CHECK_EQ(doctest::Approx(.00012345).epsilon(0.0000000001), *d);
   }
+  TEST_CASE("Comparison") {
+	double a = 5.0;
+	double b = 6.0;
+	double c = 5.0;
+	double d = 3.141592;
+	double e = 0.0012345;
+	auto bfa = BigFloat(a);
+	auto bfb = BigFloat(b);
+	auto bfc = BigFloat(c);
+	auto bfd = BigFloat(d);
+	auto bfe = BigFloat(e);
+	CHECK(bfa < bfb);
+	CHECK(bfa != bfb);
+	CHECK(bfa == bfc);
+	CHECK(bfa > bfd);
+	CHECK(bfa > bfe);
+	CHECK(bfe < bfd);
+	CHECK(bfe != bfd);
+	CHECK(bfb != bfc);
+	CHECK(bfb > bfd);
+	CHECK((bfa + BigFloat(1.)) == bfb);
+  }
 }
 // TEST_CASE("Test Loading") {
 //   std::cout << "===========" << std::endl;
