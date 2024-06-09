@@ -39,9 +39,9 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat d(6.0);
     BigFloat e = a - d;
     CHECK_EQ(doctest::Approx(-1.).epsilon(0.0000000001), *e);
-	BigFloat f(0.001);
-	BigFloat g(1.5);
-	f -= g;
+    BigFloat f(0.001);
+    BigFloat g(1.5);
+    f -= g;
     CHECK_EQ(doctest::Approx(-1.499).epsilon(0.0000000001), *f);
   }
   TEST_CASE("Wrap & Unwrap") {
@@ -59,45 +59,40 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(pi).epsilon(0.0000000001), *c);
     BigFloat d(0.00012345);
     CHECK_EQ(doctest::Approx(.00012345).epsilon(0.0000000001), *d);
-	BigFloat e(3.14159265359, 64);
-	BigFloat f(e);
-	f = f.to_precision(16);
-	e = e.to_precision(100);
+    BigFloat e(3.14159265359, 64);
+    BigFloat f(e);
+    f = f.to_precision(16);
+    e = e.to_precision(100);
     CHECK_EQ(doctest::Approx(*e).epsilon(0.0000000001), *f);
   }
   TEST_CASE("Comparison") {
-	double a = 5.0;
-	double b = 6.0;
-	double c = 5.0;
-	double d = 3.141592;
-	double e = 0.0012345;
-	auto bfa = BigFloat(a);
-	auto bfb = BigFloat(b);
-	auto bfc = BigFloat(c);
-	auto bfd = BigFloat(d);
-	auto bfe = BigFloat(e);
-	CHECK(bfa < bfb);
-	CHECK(bfa != bfb);
-	CHECK(bfa == bfc);
-	CHECK(bfa > bfd);
-	CHECK(bfa > bfe);
-	CHECK(bfe < bfd);
-	CHECK(bfe != bfd);
-	CHECK(bfb != bfc);
-	CHECK(bfb > bfd);
-	CHECK((bfa + BigFloat(1.)) == bfb);
+    double a = 5.0;
+    double b = 6.0;
+    double c = 5.0;
+    double d = 3.141592;
+    double e = 0.0012345;
+    auto bfa = BigFloat(a);
+    auto bfb = BigFloat(b);
+    auto bfc = BigFloat(c);
+    auto bfd = BigFloat(d);
+    auto bfe = BigFloat(e);
+    CHECK(bfa < bfb);
+    CHECK(bfa != bfb);
+    CHECK(bfa == bfc);
+    CHECK(bfa > bfd);
+    CHECK(bfa > bfe);
+    CHECK(bfe < bfd);
+    CHECK(bfe != bfd);
+    CHECK(bfb != bfc);
+    CHECK(bfb > bfd);
+    CHECK((bfa + BigFloat(1.)) == bfb);
+  }
+  TEST_CASE("Negative Cases") {
+    BigFloat a(100.12345);
+    BigFloat b(101.);
+    CHECK_EQ(doctest::Approx(100.12345 - 101.).epsilon(0.0000000001), *(a - b));
+    BigFloat c(-1.);
+	b += c;
+    CHECK_EQ(doctest::Approx(100.).epsilon(0.0000000001), *b);
   }
 }
-// TEST_CASE("Test Loading") {
-//   std::cout << "===========" << std::endl;
-//   DoubleAndLong conv;
-//   conv.val = 5.0;
-//   std::cout << std::bitset<64>(conv.binary) << std::endl;
-//   BigFloat a(5.0);
-//   for (long i = a.data.size() - 1; i >= 0; i--) {
-//     std::cout << std::bitset<8>(a.data[i]);
-//     if (i == a.size_mantissa)
-//       std::cout << "|";
-//   }
-//   std::cout << std::endl;
-// }
