@@ -1,6 +1,8 @@
 #ifndef BIG_FLOAT
 #define BIG_FLOAT
 #include <algorithm>
+#include <iostream>
+#include <ostream>
 #include <vector>
 typedef unsigned long size_t;
 
@@ -73,13 +75,13 @@ struct BigFloat {
   BigFloat to_precision(size_t bytes) const {
     BigFloat res(bytes);
     // copy mantissa
-    res.size_exponent = size_exponent;
     if (res.size_mantissa > size_mantissa) {
       for (size_t i = 0; i < size_mantissa; i++)
         res.data[i + (res.size_mantissa - size_mantissa)] = data[i];
     } else {
-      for (size_t i = 0; i < res.size_mantissa; i++)
+      for (size_t i = 0; i < res.size_mantissa; i++) {
         res.data[i] = data[i + (size_mantissa - res.size_mantissa)];
+      }
     }
     // copy exponent
     for (size_t i = 0; i < std::min(res.size_exponent, size_exponent); i++) {
@@ -125,6 +127,8 @@ struct BigFloat {
           res.data[byte] &= ~(1 << bit);
         }
       }
+    } else {
+      // TODO
     }
     res.sign = sign;
     return res;
@@ -158,7 +162,7 @@ struct BigFloat {
     if (sign == b.sign) {
       perform_mantissa_addition(*this, b, shift_a, shift_b, false);
     } else {
-	  // if b negative -> subtraction
+      // if b negative -> subtraction
       // check if abs of a is > abs b
       const char sign_a_tmp = sign;
       const char sign_b_tmp = b.sign;

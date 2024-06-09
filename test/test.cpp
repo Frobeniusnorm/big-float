@@ -39,6 +39,10 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat d(6.0);
     BigFloat e = a - d;
     CHECK_EQ(doctest::Approx(-1.).epsilon(0.0000000001), *e);
+	BigFloat f(0.001);
+	BigFloat g(1.5);
+	f -= g;
+    CHECK_EQ(doctest::Approx(-1.499).epsilon(0.0000000001), *f);
   }
   TEST_CASE("Wrap & Unwrap") {
     double a = 5.0;
@@ -55,6 +59,11 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(pi).epsilon(0.0000000001), *c);
     BigFloat d(0.00012345);
     CHECK_EQ(doctest::Approx(.00012345).epsilon(0.0000000001), *d);
+	BigFloat e(3.14159265359, 64);
+	BigFloat f(e);
+	f = f.to_precision(16);
+	e = e.to_precision(100);
+    CHECK_EQ(doctest::Approx(*e).epsilon(0.0000000001), *f);
   }
   TEST_CASE("Comparison") {
 	double a = 5.0;
