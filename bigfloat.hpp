@@ -1,9 +1,6 @@
 #ifndef BIG_FLOAT
 #define BIG_FLOAT
 #include <algorithm>
-#include <bitset>
-#include <iostream>
-#include <ostream>
 #include <vector>
 typedef unsigned long size_t;
 
@@ -159,9 +156,23 @@ struct BigFloat {
     // now we can carry out integer addition of mantissa
     // test on sign
     if (sign == b.sign) {
-      perform_mantissa_addition(b, shift_a, shift_b, false);
+      perform_mantissa_addition(*this, b, shift_a, shift_b, false);
     } else {
-      perform_mantissa_addition(b, shift_a, shift_b, true);
+	  // if b negative -> subtraction
+      // check if abs of a is > abs b
+      const char sign_a_tmp = sign;
+      const char sign_b_tmp = b.sign;
+      sign = 0;
+      b.sign = 0;
+      const bool a_greater = *this > b || *this == b;
+      sign = sign_a_tmp;
+      b.sign = sign_b_tmp;
+      if (a_greater) // normal a - b
+        perform_mantissa_addition(*this, b, shift_a, shift_b, true);
+      else { // we calculate b - a and negate
+        perform_mantissa_addition(b, *this, shift_b, shift_a, true);
+        sign = sign ? 0 : 1;
+      }
     }
   }
   void operator-=(BigFloat b) {
@@ -180,11 +191,25 @@ struct BigFloat {
     // now we can carry out integer addition of mantissa
     // test on sign
     if (sign == b.sign) {
-      perform_mantissa_addition(b, shift_a, shift_b, true);
+      // check if abs of a is > abs b
+      const char sign_a_tmp = sign;
+      const char sign_b_tmp = b.sign;
+      sign = 0;
+      b.sign = 0;
+      const bool a_greater = *this > b || *this == b;
+      sign = sign_a_tmp;
+      b.sign = sign_b_tmp;
+      if (a_greater) // normal a - b
+        perform_mantissa_addition(*this, b, shift_a, shift_b, true);
+      else { // we calculate b - a and negate
+        perform_mantissa_addition(b, *this, shift_b, shift_a, true);
+        sign = sign ? 0 : 1;
+      }
     } else {
-      perform_mantissa_addition(b, shift_a, shift_b, false);
+      // (-a) - b is the same as -(a + b), a - (-b) is the same as a + b (add
+      // the abs and keep the sign of a)
+      perform_mantissa_addition(*this, b, shift_a, shift_b, false);
     }
-    // TODO check if a > b and stuff
   }
   double operator*() const {
     // copy the exponent
@@ -275,18 +300,18 @@ struct BigFloat {
       return shift > 0;
     // a > b if a has a i s.t. i = max{i | a[i] = 1 and b[i] = 0} and b a index
     // j s.t. j = max{j | b[j] = 1 and a[i] = 0} and i > j
-	for (long i = size_mantissa * 8 - 1; i >= 0; i--) {
+    for (long i = size_mantissa * 8 - 1; i >= 0; i--) {
       const size_t byte = i / 8;
       const char bit = i % 8;
-	  const char data_a = data[byte] & (1 << bit);
-	  const char data_b = b.data[byte] & (1 << bit);
-	  if (data_a && !data_b)
-		return true;
-	  else if (!data_a && data_b)
-		return false;
-	}
-	// they are the same
-	return false;
+      const char data_a = data[byte] & (1 << bit);
+      const char data_b = b.data[byte] & (1 << bit);
+      if (data_a && !data_b)
+        return true;
+      else if (!data_a && data_b)
+        return false;
+    }
+    // they are the same
+    return false;
   }
   bool operator<(BigFloat b) const { return !(*this > b) && (*this != b); }
   // mul
@@ -339,8 +364,12 @@ struct BigFloat {
     }
     return carry_a == 0 ? shift_a : -shift_b;
   }
-  void perform_mantissa_addition(BigFloat &b, size_t shift_a, size_t shift_b,
-                                 bool negate_b) {
+  /**
+   * Performs binary addition of mantissas and stores the result in the data of
+   * this.
+   */
+  void perform_mantissa_addition(BigFloat &a, BigFloat &b, size_t shift_a,
+                                 size_t shift_b, bool negate_b) {
     const size_t byte_shift_a = shift_a / 8;
     const size_t byte_shift_b = shift_b / 8;
     const size_t bit_shift_a = shift_a % 8;
@@ -358,7 +387,7 @@ struct BigFloat {
                   bit + bit_shift_a < 8)) {
         const size_t byte_a = byte + byte_shift_a + ((bit + bit_shift_a) / 8);
         const char bit_a = (bit + bit_shift_a) % 8;
-        data_a = (data[byte_a] & (1 << (bit_a))) >> bit_a;
+        data_a = (a.data[byte_a] & (1 << (bit_a))) >> bit_a;
       }
       char data_b = 0;
       if (byte + byte_shift_b == size_mantissa - 1 && bit + bit_shift_b == 8) {
