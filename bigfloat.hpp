@@ -317,9 +317,28 @@ struct BigFloat {
     // they are the same
     return false;
   }
-  bool operator<(BigFloat b) const { return !(*this > b) && (*this != b); }
+  bool operator<(const BigFloat b) const {
+    return !(*this > b) && (*this != b);
+  }
   // mul
-  // protected:
+  BigFloat operator*(BigFloat b) const {
+    const size_t total_bytes = size_exponent + size_mantissa;
+    const size_t total_other = b.size_mantissa + b.size_exponent;
+    if (total_bytes != total_other)
+      b = b.to_precision(total_bytes);
+    BigFloat res(total_bytes);
+    // if one is negative, the sign is negative
+    res.sign = (sign ^ b.sign) ? 1 : 0;
+    // multiply mantissa (do this like this: iterate over b and add the complete
+    // mantissa of a shifted by i each time b has a 1 at index i. This requires
+    // shifting of the result per iteration)
+    // TODO
+    // sum exponents
+    // TODO
+    return res;
+  }
+
+protected:
   size_t size_mantissa; // in bytes
   size_t size_exponent; // in bytes
   char sign = 1;
