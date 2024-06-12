@@ -401,16 +401,16 @@ struct BigFloat {
     }
     // sum exponents
     char carry = 0;
-    for (size_t i = 0; i < size_exponent; i++) {
+    for (size_t i = 0; i < size_exponent * 8; i++) {
       const size_t byte = i / 8;
       const char bit = i % 8;
       const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
       const char data_b = (b.data[size_mantissa + byte] & (1l << bit)) >> bit;
       const char sum = data_a + data_b + carry;
       if (sum % 2 == 0)
-        data[byte] &= ~(1 << bit);
+        data[size_mantissa + byte] &= ~(1 << bit);
       else
-        data[byte] |= (1 << bit);
+        data[size_mantissa + byte] |= (1 << bit);
       if (sum > 1)
         carry = 1;
       else
@@ -418,7 +418,7 @@ struct BigFloat {
     }
   }
 
-protected:
+  // protected:
   size_t size_mantissa; // in bytes
   size_t size_exponent; // in bytes
   char sign = 1;
@@ -441,8 +441,11 @@ protected:
       else
         data[byte_dj] &= ~(1 << bit_dj);
     }
-    // set first bit to 1
-    data[size_mantissa - 1] |= (1 << 7);
+    if (first_digit)
+      // set first bit to 1
+      data[size_mantissa - 1] |= (1 << 7);
+    else
+      data[size_mantissa - 1] &= ~(1 << 7);
     // add one to exponent
     char carry = 1;
     for (size_t j = 0; j < size_exponent * 8 && carry; j++) {
