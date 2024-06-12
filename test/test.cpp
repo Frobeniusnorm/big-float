@@ -95,4 +95,9 @@ TEST_SUITE("Floating Point semantics") {
 	b += c;
     CHECK_EQ(doctest::Approx(100.).epsilon(0.0000000001), *b);
   }
+  TEST_CASE("Multiplication") {
+    BigFloat a(1.);
+    BigFloat b(2.);
+    CHECK_EQ(*(a * b), *b);
+  }
 }
