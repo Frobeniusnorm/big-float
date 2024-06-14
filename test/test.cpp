@@ -27,6 +27,8 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat k(0.0154321);
     double l = 0.0166666;
     CHECK_EQ(doctest::Approx(l), *(j + k));
+	BigFloat m = BigFloat(0.000014325) + BigFloat(41347123.12312);
+    CHECK_EQ(doctest::Approx(0.000014325 + 41347123.12312), *m);
   }
   TEST_CASE("Subtraction") {
     BigFloat a(5.0);
@@ -96,33 +98,21 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(100.).epsilon(0.0000000001), *b);
   }
   TEST_CASE("Multiplication") {
-    BigFloat a(1.);
+    BigFloat a(0.5);
     BigFloat b(2.);
-    for (int i = a.data.size(); i >= 0; i--) {
-      std::cout << std::bitset<8>(a.data[i]);
-      if (i == a.size_mantissa)
-        std::cout << "|";
-    }
-    std::cout << std::endl;
-    for (int i = b.data.size(); i >= 0; i--) {
-      std::cout << std::bitset<8>(b.data[i]);
-      if (i == b.size_mantissa)
-        std::cout << "|";
-    }
-    std::cout << std::endl;
-    BigFloat c = a * b;
-    for (int i = c.data.size(); i >= 0; i--) {
-      std::cout << std::bitset<8>(c.data[i]);
-      if (i == c.size_mantissa)
-        std::cout << "|";
-	}
-    std::cout << std::endl;
-    DoubleAndLong conv;
-    conv.val = *c;
-    std::cout << std::bitset<64>(conv.binary) << std::endl;
-    conv.val = 1 * 2;
-    std::cout << std::bitset<64>(conv.binary) << std::endl;
-
-    CHECK_EQ(*(a * b), *b);
+    CHECK_EQ(*(a * b), 1.);
+    BigFloat c(3.141592);
+    BigFloat d(0.001234);
+	BigFloat e = c * d;
+    CHECK_EQ(doctest::Approx(3.141592 * 0.001234), *e);
+	BigFloat f = BigFloat(33.) * BigFloat(0.00324);
+	CHECK_EQ(doctest::Approx(33. * 0.00324), *f);
+	BigFloat g = BigFloat(0.000014325) * BigFloat(41347123.12312);
+	DoubleAndLong conv;
+	conv.val = *g;
+	std::cout << std::bitset<64>(conv.binary) << std::endl;
+	conv.val = 0.000014325 * 41347123.12312;
+	std::cout << std::bitset<64>(conv.binary) << std::endl;
+	CHECK_EQ(doctest::Approx(0.000014325 * 41347123.12312), *g);
   }
 }
