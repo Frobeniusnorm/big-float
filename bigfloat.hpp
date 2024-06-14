@@ -390,6 +390,22 @@ struct BigFloat {
         }
         // END DEBUG
         char carry = 0;
+        // we set carry to 1 if we want to round
+        {
+          int round = 0;
+          for (int k = 0; k < 3; k++) {
+            if (shift_b > k) {
+              const size_t byte_bj = (shift_b - 1 - k) / 8;
+              const char bit_bj = (shift_b - 1 - k) % 8;
+              const char data = (b.data[byte_bj] & (1 << bit_bj)) >> bit_bj;
+              if (data)
+                round |= (1 << (2 - k));
+            }
+          }
+          if (round >= 4)
+            carry = 1;
+        }
+        // add b shifted to the result
         for (size_t j = 0; j < size_mantissa * 8; j++) {
           const size_t byte_aj = j / 8;
           const size_t bit_aj = j % 8;
@@ -424,6 +440,7 @@ struct BigFloat {
         // if carry is still set -> we carry to 1., which becomes 10., we shift
         // mantissa one right and add one to exponent
         if (carry) {
+          // TODO THE ERROR IS HERE
           cout << "(caused shift and addition to exponent:";
           shift_and_add_exponent(0);
           cout << "\n=";
@@ -432,7 +449,7 @@ struct BigFloat {
             const size_t bit_j = j % 8;
             cout << ((data[byte_j] & (1 << bit_j)) >> bit_j);
           }
-          cout <<")" << endl;
+          cout << ")" << endl;
         }
       }
     }
@@ -463,8 +480,10 @@ struct BigFloat {
         else
           data[byte] |= (1 << bit);
       }
-	  if (carry)
-          shift_and_add_exponent(0);
+      if (carry) {
+        shift_and_add_exponent(0);
+        cout << "\n(caused final shift and addition to exponent)";
+      }
       cout << "\n=";
       for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
         const size_t byte_j = j / 8;
@@ -472,8 +491,9 @@ struct BigFloat {
         cout << ((data[byte_j] & (1 << bit_j)) >> bit_j);
       }
       cout << endl;
-	  // TODO was add_one_to_exponent
+      // TODO was add_one_to_exponent
       shift_and_add_exponent(0);
+      //   add_one_to_exponent();
       cout << ">";
       for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
         const size_t byte_j = j / 8;
