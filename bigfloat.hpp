@@ -338,6 +338,23 @@ struct BigFloat {
       working_mantissa[i] = data[i];
       data[i] = 0;
     }
+    // sum exponents
+    char carry = 0;
+    for (size_t i = 0; i < size_exponent * 8; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
+      const char data_b = (b.data[size_mantissa + byte] & (1l << bit)) >> bit;
+      const char sum = data_a + data_b + carry;
+      if (sum % 2 == 0)
+        data[size_mantissa + byte] &= ~(1 << bit);
+      else
+        data[size_mantissa + byte] |= (1 << bit);
+      if (sum > 1)
+        carry = 1;
+      else
+        carry = 0;
+    }
     // multiply mantissa
     for (size_t i = 0; i < size_mantissa * 8; i++) {
       const size_t byte = i / 8;
@@ -382,7 +399,7 @@ struct BigFloat {
         const size_t byte = i / 8;
         const size_t bit = i % 8;
 
-        const char data_b = (working_mantissa[byte] & (1 << bit)) >> bit;
+        const char data_b = (b.data[byte] & (1 << bit)) >> bit;
         const char data_a = (working_mantissa[byte] & (1 << bit)) >> bit;
         const char sum = data_a + data_b + carry;
         if (sum > 1)
@@ -398,23 +415,6 @@ struct BigFloat {
       // one to exponent, if carry is set, we set the first bit of the mantissa
       // to 1
       shift_and_add_exponent(carry);
-    }
-    // sum exponents
-    char carry = 0;
-    for (size_t i = 0; i < size_exponent * 8; i++) {
-      const size_t byte = i / 8;
-      const char bit = i % 8;
-      const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
-      const char data_b = (b.data[size_mantissa + byte] & (1l << bit)) >> bit;
-      const char sum = data_a + data_b + carry;
-      if (sum % 2 == 0)
-        data[size_mantissa + byte] &= ~(1 << bit);
-      else
-        data[size_mantissa + byte] |= (1 << bit);
-      if (sum > 1)
-        carry = 1;
-      else
-        carry = 0;
     }
   }
 
@@ -451,7 +451,7 @@ struct BigFloat {
     for (size_t j = 0; j < size_exponent * 8 && carry; j++) {
       const size_t byte_aj = j / 8;
       const size_t bit_aj = j % 8;
-      const char data_a = data[size_mantissa + byte_aj] & (1 << bit_aj);
+      const char data_a = (data[size_mantissa + byte_aj] & (1 << bit_aj)) >> bit_aj;
       const char sum = data_a + carry;
       if (sum > 1)
         carry = 1;
