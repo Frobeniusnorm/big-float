@@ -328,6 +328,7 @@ struct BigFloat {
     return res;
   }
   void operator*=(BigFloat b) {
+    // TODO found the problem: the result has no initial 1.! Keep track of that
     const size_t total_bytes = size_exponent + size_mantissa;
     const size_t total_other = b.size_mantissa + b.size_exponent;
     if (total_bytes != total_other)
