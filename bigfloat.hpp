@@ -649,7 +649,7 @@ struct BigFloat {
   void normalize() {
     // left shift mantissa (and subtract 1 to
     // exponent each) to correct this
-    GITsize_t shifting = 1;
+    size_t shifting = 1;
     for (long i = size_mantissa * 8 - 1; i >= 0; i--) {
       const int byte = i / 8;
       const char bit = i % 8;
