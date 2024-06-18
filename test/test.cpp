@@ -29,6 +29,8 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(l), *(j + k));
     BigFloat m = BigFloat(0.000014325) + BigFloat(41347123.12312);
     CHECK_EQ(doctest::Approx(0.000014325 + 41347123.12312), *m);
+    BigFloat o(21505.2), p(29105.1);
+    CHECK_EQ(doctest::Approx(21505.2 + 29105.1), *(o + p));
   }
   TEST_CASE("Subtraction") {
     BigFloat a(5.0);
@@ -106,19 +108,34 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat d(0.001234);
     BigFloat e = c * d;
     CHECK_EQ(doctest::Approx(3.141592 * 0.001234), *e);
-    DoubleAndLong conv;
-    conv.val = *e;
-    std::cout << std::bitset<64>(conv.binary) << std::endl;
-    conv.val = 3.141592 * 0.001234;
-    std::cout << std::bitset<64>(conv.binary) << std::endl;
-    // BigFloat f = BigFloat(0.00324) * BigFloat(333.);
-    // CHECK_EQ(doctest::Approx(333. * 0.00324), *f);
-    // BigFloat g = BigFloat(0.000014325, 12) * BigFloat(41347123.12312, 12);
-    // DoubleAndLong conv;
-    // conv.val = *g;
-    // std::cout << std::bitset<64>(conv.binary) << std::endl;
-    // conv.val = 0.000014325 * 41347123.12312;
-    // std::cout << std::bitset<64>(conv.binary) << std::endl;
-    // CHECK_EQ(doctest::Approx(0.000014325 * 41347123.12312), *g);
+    BigFloat f = BigFloat(0.00324) * BigFloat(333.);
+    CHECK_EQ(doctest::Approx(333. * 0.00324), *f);
+    BigFloat g = BigFloat(0.000014325, 12) * BigFloat(41347123.12312, 12);
+    CHECK_EQ(doctest::Approx(0.000014325 * 41347123.12312), *g);
+    CHECK_EQ(doctest::Approx(12345 * 54321),
+             *(BigFloat(12345.) * BigFloat(54321.)));
+    CHECK_EQ(doctest::Approx(21505.2 * 29105.1), *(BigFloat(21505.2) * BigFloat(29105.1)));
   }
+  /* TEST_CASE("Randomized") {
+    for (int i = 0; i < 1000; i++) {
+      double a = rand() / 50000.0;
+      double b = rand() / 50000.0;
+      BigFloat x(a);
+      BigFloat y(b);
+      // wrap and unwrap
+      CHECK_EQ(a, *x);
+      CHECK_EQ(b, *y);
+      std::cout << a << ", " << b << std::endl;
+      // comparison
+      if (a < b)
+        CHECK(x < y);
+      else if (a > b)
+        CHECK(x > y);
+      else
+        CHECK(x == y);
+      // arithmetic
+      CHECK_EQ(doctest::Approx(a + b), *(x + y));
+      CHECK_EQ(doctest::Approx(a * b), *(x * y));
+    }
+  } */
 }

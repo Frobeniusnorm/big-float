@@ -328,29 +328,19 @@ struct BigFloat {
     return res;
   }
   void operator*=(BigFloat b) {
-    // TODO found the problem: the result has no initial 1.! Keep track of that
     const size_t total_bytes = size_exponent + size_mantissa;
     const size_t total_other = b.size_mantissa + b.size_exponent;
     if (total_bytes != total_other)
       b = b.to_precision(total_bytes);
     using namespace std;
+    bool has_one = false;
     // if one is negative, the sign is negative
     sign = (sign ^ b.sign) ? 1 : 0;
     // we put the mantissa of a in its working mantissa
-    cout << "multiplying"
-         << "\n";
-    for (long k = size_mantissa - 1; k >= 0; k--) {
-      cout << bitset<8>(data[k]);
-    }
     for (size_t i = 0; i < size_mantissa; i++) {
       working_mantissa[i] = data[i];
       data[i] = 0;
     }
-    cout << "\nwith\n";
-    for (long k = size_mantissa - 1; k >= 0; k--) {
-      cout << bitset<8>(b.data[k]);
-    }
-    cout << '\n';
     // sum exponents
     char carry = 0;
     for (size_t i = 0; i < size_exponent * 8; i++) {
@@ -375,21 +365,6 @@ struct BigFloat {
       if (working_mantissa[byte] & (1 << bit)) {
         // add complete b, shifted by (i + 1) in reverse order
         const size_t shift_b = size_mantissa * 8 - i;
-        // DEBUG
-        cout << "+";
-        for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
-          const size_t byte_j = (j + shift_b) / 8;
-          const size_t bit_j = (j + shift_b) % 8;
-          char data_bj;
-          if (j + shift_b == size_mantissa * 8)
-            data_bj = 1;
-          else if (j + shift_b < size_mantissa * 8)
-            data_bj = ((b.data[byte_j] & (1 << bit_j)) >> bit_j);
-          else
-            data_bj = 0;
-          cout << (int)data_bj;
-        }
-        // END DEBUG
         char carry = 0;
         // we set carry to 1 if we want to round
         {
@@ -430,45 +405,22 @@ struct BigFloat {
           else
             data[byte_aj] |= (1 << bit_aj);
         }
-        cout << "\n=";
-        for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
-          const size_t byte_j = j / 8;
-          const size_t bit_j = j % 8;
-          cout << ((data[byte_j] & (1 << bit_j)) >> bit_j);
-        }
-        cout << endl;
-        // END DEBUG
-        // if carry is still set -> we carry to 1., which becomes 10., we shift
-        // mantissa one right and add one to exponent
-        if (carry) {
-          // TODO THE ERROR IS HERE
-          cout << "(caused shift and addition to exponent:";
-          shift_and_add_exponent(0);
-          cout << "\n=";
-          for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
-            const size_t byte_j = j / 8;
-            const size_t bit_j = j % 8;
-            cout << ((data[byte_j] & (1 << bit_j)) >> bit_j);
+        if (carry && !has_one) {
+          has_one = true;
+        } else
+          // if carry is still set -> we carry to 1., which becomes 10., we
+          // shift mantissa one right and add one to exponent
+          if (carry && has_one) {
+            shift_and_add_exponent(0);
           }
-          cout << ")" << endl;
-        }
       }
     }
     // add complete mantissa again because 1.
-    cout << "+";
-    for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
-      const size_t byte_j = (j) / 8;
-      const size_t bit_j = (j) % 8;
-      char data_bj;
-      data_bj = ((b.data[byte_j] & (1 << bit_j)) >> bit_j);
-      cout << (int)data_bj;
-    }
     {
       char carry = 0;
       for (size_t i = 0; i < size_mantissa * 8; i++) {
         const size_t byte = i / 8;
         const size_t bit = i % 8;
-
         const char data_b = (b.data[byte] & (1 << bit)) >> bit;
         const char data_a = (data[byte] & (1 << bit)) >> bit;
         const char sum = data_a + data_b + carry;
@@ -481,27 +433,17 @@ struct BigFloat {
         else
           data[byte] |= (1 << bit);
       }
-      if (carry) {
+      // carry about the carry
+      if (carry && !has_one)
+        has_one = true;
+      else if (carry && has_one) {
         shift_and_add_exponent(0);
-        cout << "\n(caused final shift and addition to exponent)";
       }
-      cout << "\n=";
-      for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
-        const size_t byte_j = j / 8;
-        const size_t bit_j = j % 8;
-        cout << ((data[byte_j] & (1 << bit_j)) >> bit_j);
-      }
-      cout << endl;
-      // TODO was add_one_to_exponent
-      shift_and_add_exponent(0);
-      //   add_one_to_exponent();
-      cout << ">";
-      for (long j = size_mantissa * 8 - 1; j >= 0; j--) {
-        const size_t byte_j = j / 8;
-        const size_t bit_j = j % 8;
-        cout << ((data[byte_j] & (1 << bit_j)) >> bit_j);
-      }
-      cout << endl;
+      // now we care about the addition of 1.
+      if (has_one)
+        shift_and_add_exponent(0);
+      // i have no idea why i would need the following line
+      add_one_to_exponent();
     }
   }
 
