@@ -31,6 +31,11 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(0.000014325 + 41347123.12312), *m);
     BigFloat o(21505.2), p(29105.1);
     CHECK_EQ(doctest::Approx(21505.2 + 29105.1), *(o + p));
+	DoubleAndLong conv;
+	conv.val = 21505.2 + 29105.1;
+	std::cout << std::bitset<64>(conv.binary) << std::endl;
+	conv.val = *(o + p);
+	std::cout << std::bitset<64>(conv.binary) << std::endl;
   }
   TEST_CASE("Subtraction") {
     BigFloat a(5.0);

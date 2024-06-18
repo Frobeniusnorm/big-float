@@ -605,10 +605,12 @@ struct BigFloat {
     }
     if (!negate_b) {
       bool was_carry = carry != 0;
+      // both had a 1 before the comma -> increment exponent and shift mantissa
+      // to right
       if (shift_a == 0 && shift_b == 0)
         carry = 1;
-      // add carry to exponent and shift mantissa by 1 to right
       if (carry) {
+        // shift right
         for (size_t i = 1; i < size_mantissa * 8; i++) {
           const size_t byte = i / 8;
           const char bit = i % 8;
@@ -620,6 +622,7 @@ struct BigFloat {
           else
             data[d_byte] &= ~(1 << d_bit);
         }
+        // add one to exponent
         for (size_t i = 0; i < size_exponent * 8 && carry != 0; i++) {
           const size_t byte = i / 8;
           const char bit = i % 8;
@@ -631,8 +634,10 @@ struct BigFloat {
             data[size_mantissa + byte] |= (1 << bit);
           }
         }
-        if (!was_carry)
+        if (!was_carry) // carry was not set -> we shift the 0 in front
           data[size_mantissa - 1] &= ~(1 << 7);
+        else // carry was set -> we shift the carry
+          data[size_mantissa - 1] |= (1 << 7);
       }
     } else {
       if ((shift_a == shift_b && carry == 0) ||
@@ -644,7 +649,7 @@ struct BigFloat {
   void normalize() {
     // left shift mantissa (and subtract 1 to
     // exponent each) to correct this
-    size_t shifting = 1;
+    GITsize_t shifting = 1;
     for (long i = size_mantissa * 8 - 1; i >= 0; i--) {
       const int byte = i / 8;
       const char bit = i % 8;
