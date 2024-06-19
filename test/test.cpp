@@ -53,7 +53,8 @@ TEST_SUITE("Floating Point semantics") {
     // 39534.3 - 10348.2
     double h = 10348.2 - 39534.3;
     CHECK(BigFloat(39534.3) > BigFloat(10348.2));
-    BigFloat i = BigFloat(10348.2); i -= BigFloat(39534.3);
+    BigFloat i = BigFloat(10348.2);
+    i -= BigFloat(39534.3);
     CHECK_EQ(doctest::Approx(h), *i);
   }
   TEST_CASE("Wrap & Unwrap") {
@@ -130,28 +131,32 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat k = BigFloat(31436.5) * BigFloat(8106.82);
     CHECK_EQ(doctest::Approx(h), *k);
   }
- /* TEST_CASE("Randomized") {
-     for (int i = 0; i < 1000; i++) {
-       double a = rand() / 50000.0;
-       double b = rand() / 50000.0;
-       BigFloat x(a);
-       BigFloat y(b);
-       // wrap and unwrap
-       CHECK_EQ(a, *x);
-       CHECK_EQ(b, *y);
-       // comparison
-       if (a < b)
-         CHECK(x < y);
-       else if (a > b)
-         CHECK(x > y);
-       else
-         CHECK(x == y);
-       // arithmetic
-       std::cout << a << " - " << b << std::endl;
-       CHECK_EQ(doctest::Approx(a - b), *(x - y));
-       CHECK_EQ(doctest::Approx(a + b), *(x + y));
-       CHECK_EQ(doctest::Approx(b - a), *(y - x));
-       CHECK_EQ(doctest::Approx(a * b), *(x * y));
-     }
-   } */
+  TEST_CASE("Randomized") {
+    for (int i = 0; i < 10000; i++) {
+      double a = rand() / 50000.0;
+      double b = rand() / 50000.0;
+      BigFloat x(a);
+      BigFloat y(b);
+      // wrap and unwrap
+      CHECK_EQ(a, *x);
+      CHECK_EQ(b, *y);
+      // comparison
+      if (a < b)
+        CHECK(x < y);
+      else if (a > b)
+        CHECK(x > y);
+      else
+        CHECK(x == y);
+      // arithmetic
+      CHECK_EQ(doctest::Approx(a - b), *(x - y));
+      CHECK_EQ(doctest::Approx(a + b), *(x + y));
+      CHECK_EQ(doctest::Approx(a + (-b)), *(x + (-y)));
+      CHECK_EQ(doctest::Approx((-a) + (-b)), *((-x) + (-y)));
+      CHECK_EQ(doctest::Approx((-a) + b), *((-x) + y));
+      CHECK_EQ(doctest::Approx((-a) - b), *((-x) - y));
+      CHECK_EQ(doctest::Approx((-a) - (-b)), *((-x) - (-y)));
+      CHECK_EQ(doctest::Approx(b - a), *(y - x));
+      CHECK_EQ(doctest::Approx(a * b), *(x * y));
+    }
+  }
 }

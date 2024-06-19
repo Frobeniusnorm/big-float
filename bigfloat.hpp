@@ -150,9 +150,17 @@ struct BigFloat {
     const size_t total_other = b.size_mantissa + b.size_exponent;
     if (total_bytes != total_other)
       b = b.to_precision(total_bytes);
+    // check if abs of a is > abs b
     const long shift = calculate_mantissa_shift(b);
     const long shift_a = shift < 0 ? -shift : 0;
     const long shift_b = shift > 0 ? shift : 0;
+    const char sign_a_tmp = sign;
+    const char sign_b_tmp = b.sign;
+    sign = 0;
+    b.sign = 0;
+    const bool a_greater = *this > b || *this == b;
+    sign = sign_a_tmp;
+    b.sign = sign_b_tmp;
     if (shift_a != 0) {
       // copy new exponent of b
       for (size_t i = 0; i < size_exponent; i++)
@@ -164,14 +172,6 @@ struct BigFloat {
       perform_mantissa_addition(*this, b, shift_a, shift_b, false);
     } else {
       // if b negative -> subtraction
-      // check if abs of a is > abs b
-      const char sign_a_tmp = sign;
-      const char sign_b_tmp = b.sign;
-      sign = 0;
-      b.sign = 0;
-      const bool a_greater = *this > b || *this == b;
-      sign = sign_a_tmp;
-      b.sign = sign_b_tmp;
       if (a_greater) // normal a - b
         perform_mantissa_addition(*this, b, shift_a, shift_b, true);
       else { // we calculate b - a and negate
@@ -188,6 +188,14 @@ struct BigFloat {
     const long shift = calculate_mantissa_shift(b);
     const long shift_a = shift < 0 ? -shift : 0;
     const long shift_b = shift > 0 ? shift : 0;
+    // check if abs of a is > abs b
+    const char sign_a_tmp = sign;
+    const char sign_b_tmp = b.sign;
+    sign = 0;
+    b.sign = 0;
+    const bool a_greater = this->operator>(b) || this->operator==(b);
+    sign = sign_a_tmp;
+    b.sign = sign_b_tmp;
     if (shift_a != 0) {
       // copy new exponent of b
       for (size_t i = 0; i < size_exponent; i++)
@@ -196,15 +204,6 @@ struct BigFloat {
     // now we can carry out integer addition of mantissa
     // test on sign
     if (sign == b.sign) {
-      // check if abs of a is > abs b
-      const char sign_a_tmp = sign;
-      const char sign_b_tmp = b.sign;
-      sign = 0;
-      b.sign = 0;
-      const bool a_greater = *this > b || *this == b;
-      sign = sign_a_tmp;
-      b.sign = sign_b_tmp;
-      std::cout << a_greater << std::endl;
       if (a_greater) // normal a - b
         perform_mantissa_addition(*this, b, shift_a, shift_b, true);
       else { // we calculate b - a and negate
@@ -216,6 +215,11 @@ struct BigFloat {
       // the abs and keep the sign of a)
       perform_mantissa_addition(*this, b, shift_a, shift_b, false);
     }
+  }
+  BigFloat operator-() const {
+	BigFloat c(*this);
+	c.sign = sign ? 0 : 1;
+	return c;
   }
   double operator*() const {
     // copy the exponent
@@ -277,8 +281,13 @@ struct BigFloat {
   }
   bool operator!=(const BigFloat b) const { return !(*this == b); }
   bool operator>(BigFloat b) const {
-    if (sign && !b.sign) return true;
-    if (!sign && b.sign) return false;
+    if (sign && !b.sign)
+      return true;
+    if (!sign && b.sign)
+      return false;
+    const bool true_value =
+        sign && b.sign ? false
+                       : true; // because we have to invert for negative values
     const size_t total_bytes = size_exponent + size_mantissa;
     const size_t total_other = b.size_mantissa + b.size_exponent;
     if (total_bytes != total_other)
@@ -287,7 +296,7 @@ struct BigFloat {
     // because value is 1.mantissa, if the exponent is smaller -> the value is
     // smaller
     if (shift != 0)
-      return shift > 0;
+      return shift > 0 ? true_value : !true_value;
     // a > b if a has a i s.t. i = max{i | a[i] = 1 and b[i] = 0} and b a index
     // j s.t. j = max{j | b[j] = 1 and a[i] = 0} and i > j
     for (long i = size_mantissa * 8 - 1; i >= 0; i--) {
@@ -296,11 +305,11 @@ struct BigFloat {
       const char data_a = data[byte] & (1 << bit);
       const char data_b = b.data[byte] & (1 << bit);
       if (data_a && !data_b)
-        return true;
+        return true_value;
       else if (!data_a && data_b)
-        return false;
+        return !true_value;
     }
-    // they are the same
+    // they are the same (always false)
     return false;
   }
   bool operator<(const BigFloat b) const {
