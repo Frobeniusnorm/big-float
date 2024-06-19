@@ -634,10 +634,10 @@ struct BigFloat {
             data[size_mantissa + byte] |= (1 << bit);
           }
         }
-        if (!was_carry) // carry was not set -> we shift the 0 in front
-          data[size_mantissa - 1] &= ~(1 << 7);
-        else // carry was set -> we shift the carry
+        if (was_carry && shift_a == 0 && shift_b == 0)
           data[size_mantissa - 1] |= (1 << 7);
+        else
+          data[size_mantissa - 1] &= ~(1 << 7);
       }
     } else {
       if ((shift_a == shift_b && carry == 0) ||
