@@ -276,6 +276,8 @@ struct BigFloat {
   }
   bool operator!=(const BigFloat b) const { return !(*this == b); }
   bool operator>(BigFloat b) const {
+    if (sign && !b.sign) return true;
+    if (!sign && b.sign) return false;
     const size_t total_bytes = size_exponent + size_mantissa;
     const size_t total_other = b.size_mantissa + b.size_exponent;
     if (total_bytes != total_other)
