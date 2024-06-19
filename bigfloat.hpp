@@ -239,35 +239,17 @@ struct BigFloat {
       const char d = (data[byte] & (1 << bit)) >> bit;
       final |= (long)d << (i - (size_mantissa * 8 - 52));
     }
-    // a 1 before the decimal point might be present -> check for it and correct
-    // it accordingly only if the first bit of the exponent is set (else it is
-    // negative and the problem is taken care of implictly)
-    if (data[size_mantissa + size_exponent - 1] & 0x80) {
-      // accumulate shift if exponent
-      size_t shift = 0;
-      for (size_t i = 0; i < size_exponent * 8 - 1; i++) {
-        const size_t byte = i / 8;
-        const char bit = i % 8;
-        if (data[size_mantissa + byte] & (1 << bit))
-          shift += i == 0 ? 1 : 2 << (i - 1);
-      }
-      // if the bit is set...
-      if (shift >= 1 && shift < size_mantissa * 8) {
-        size_t shift_byte = shift / 8;
-        char shift_bit = shift % 8;
-        if (data[size_mantissa - 1 - shift_byte] & (0x80 >> (shift_bit - 1))) {
-          // set the according bit in the result
-          long shift_res = 0;
-          for (size_t i = 0; i < 11; i++) {
-            const size_t byte = i / 8;
-            const char bit = i % 8;
-            if (data[size_mantissa + byte] & (1 << bit))
-              shift_res += i == 0 ? 1 : 2l << (i - 1);
-          }
-          final |= 1l << (52 - shift_res);
-        }
-      }
+    // look at the first missing 3 bits for rounding
+    char round = 0;
+    for (int i = 0; i < 3; i++) {
+      const size_t byte = (size_mantissa * 8 - 53 - i) / 8;
+      const char bit = (size_mantissa * 8 - 53 - i) % 8;
+      const char d = data[byte] & (1 << bit);
+      if (d)
+        round |= (1 << (2 - i));
     }
+    if (round >= 4)
+      final += 1; // TODO handle overflow
     if (sign)
       final |= 1l << 63;
     else
@@ -333,7 +315,6 @@ struct BigFloat {
     if (total_bytes != total_other)
       b = b.to_precision(total_bytes);
     using namespace std;
-    bool has_one = false;
     // if one is negative, the sign is negative
     sign = (sign ^ b.sign) ? 1 : 0;
     // we put the mantissa of a in its working mantissa
@@ -358,6 +339,7 @@ struct BigFloat {
       else
         carry = 0;
     }
+    bool has_one = false; // if the implicit one is present in the result
     // multiply mantissa
     for (size_t i = 0; i < size_mantissa * 8; i++) {
       const size_t byte = i / 8;
@@ -433,15 +415,10 @@ struct BigFloat {
         else
           data[byte] |= (1 << bit);
       }
-      // carry about the carry
-      if (carry && !has_one)
-        has_one = true;
-      else if (carry && has_one) {
-        shift_and_add_exponent(0);
-      }
-      // now we care about the addition of 1.
-      if (has_one)
-        shift_and_add_exponent(0);
+      // we have has_one.data + 1.b + carry.0
+      const char sum = (has_one ? 1 : 0) + 1 + carry;
+      if (sum > 1)
+        shift_and_add_exponent((sum % 2 == 0 ? 0 : 1));
       // i have no idea why i would need the following line
       add_one_to_exponent();
     }
@@ -568,12 +545,31 @@ struct BigFloat {
     const size_t bit_shift_a = shift_a % 8;
     const size_t bit_shift_b = shift_b % 8;
     char carry = 0;
+    // we set carry to 1 if we want to round
+    {
+      int round = 0;
+      for (int k = 0; k < 3; k++) {
+        if (shift_b > k) {
+          const size_t byte_bj = (shift_b - 1 - k) / 8;
+          const char bit_bj = (shift_b - 1 - k) % 8;
+          const char data = (b.data[byte_bj] & (1 << bit_bj)) >> bit_bj;
+          if (data)
+            round |= (1 << (2 - k));
+        }
+      }
+      if (round >= 4)
+        carry = 1;
+    }
+    // addition
     for (size_t i = 0; i < size_mantissa * 8; i++) {
       const size_t byte = i / 8;
       const char bit = i % 8;
       char data_a = 0;
       // since it is 1.mantissa, the 1 appears
-      if (byte + byte_shift_a == size_mantissa - 1 && bit + bit_shift_a == 8) {
+      if ((byte + byte_shift_a == size_mantissa - 1 &&
+           bit + bit_shift_a == 8) ||
+          (bit_shift_a == 0 && bit == 0 &&
+           byte_shift_a + byte == size_mantissa)) {
         data_a = 1;
       } else if (byte + byte_shift_a < size_mantissa &&
                  (byte + byte_shift_a != size_mantissa - 1 ||
@@ -583,7 +579,10 @@ struct BigFloat {
         data_a = (a.data[byte_a] & (1 << (bit_a))) >> bit_a;
       }
       char data_b = 0;
-      if (byte + byte_shift_b == size_mantissa - 1 && bit + bit_shift_b == 8) {
+      if ((byte + byte_shift_b == size_mantissa - 1 &&
+           bit + bit_shift_b == 8) ||
+          (bit_shift_b == 0 && bit == 0 &&
+           byte_shift_b + byte == size_mantissa)) {
         data_b = 1;
       } else if (byte + byte_shift_b < size_mantissa &&
                  (byte + byte_shift_b != size_mantissa - 1 ||

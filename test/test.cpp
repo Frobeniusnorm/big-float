@@ -26,12 +26,14 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat j(0.0012345);
     BigFloat k(0.0154321);
     double l = 0.0166666;
+    CHECK_EQ(doctest::Approx(l), *(j + k));
     BigFloat m = BigFloat(0.000014325) + BigFloat(41347123.12312);
     CHECK_EQ(doctest::Approx(0.000014325 + 41347123.12312), *m);
     BigFloat o(21505.2), p(29105.1);
     CHECK_EQ(doctest::Approx(21505.2 + 29105.1), *(o + p));
-    BigFloat t = j + k;
-    CHECK_EQ(doctest::Approx(l), *t);
+    BigFloat q = BigFloat(31649.6, 12) + BigFloat(94.8853, 12);
+    double r = 31649.6 + 94.8853;
+    CHECK_EQ(doctest::Approx(r), *q);
   }
   TEST_CASE("Subtraction") {
     BigFloat a(5.0);
@@ -69,6 +71,8 @@ TEST_SUITE("Floating Point semantics") {
     f = f.to_precision(16);
     e = e.to_precision(100);
     CHECK_EQ(doctest::Approx(*e).epsilon(0.0000000001), *f);
+    CHECK_EQ(doctest::Approx(31649.6), *BigFloat(31649.6));
+    CHECK_EQ(doctest::Approx(94.8853), *BigFloat(94.8853));
   }
   TEST_CASE("Comparison") {
     double a = 5.0;
@@ -120,31 +124,26 @@ TEST_SUITE("Floating Point semantics") {
     double h = 31436.5 * 8106.82;
     BigFloat k = BigFloat(31436.5) * BigFloat(8106.82);
     CHECK_EQ(doctest::Approx(h), *k);
-    DoubleAndLong conv;
-    conv.val = h;
-    std::cout << std::bitset<64>(conv.binary) << std::endl;
-    conv.val = *k;
-    std::cout << std::bitset<64>(conv.binary) << std::endl;
   }
- // TEST_CASE("Randomized") {
- //   for (int i = 0; i < 1000; i++) {
- //     double a = rand() / 50000.0;
- //     double b = rand() / 50000.0;
- //     BigFloat x(a);
- //     BigFloat y(b);
- //     // wrap and unwrap
- //     CHECK_EQ(a, *x);
- //     CHECK_EQ(b, *y);
- //     // comparison
- //     if (a < b)
- //       CHECK(x < y);
- //     else if (a > b)
- //       CHECK(x > y);
- //     else
- //       CHECK(x == y);
- //     // arithmetic
- //     CHECK_EQ(doctest::Approx(a + b), *(x + y));
- //     CHECK_EQ(doctest::Approx(a * b), *(x * y));
- //   }
- // }
+  TEST_CASE("Randomized") {
+     for (int i = 0; i < 1000; i++) {
+       double a = rand() / 50000.0;
+       double b = rand() / 50000.0;
+       BigFloat x(a);
+       BigFloat y(b);
+       // wrap and unwrap
+       CHECK_EQ(a, *x);
+       CHECK_EQ(b, *y);
+       // comparison
+       if (a < b)
+         CHECK(x < y);
+       else if (a > b)
+         CHECK(x > y);
+       else
+         CHECK(x == y);
+       // arithmetic
+       CHECK_EQ(doctest::Approx(a + b), *(x + y));
+       CHECK_EQ(doctest::Approx(a * b), *(x * y));
+     }
+   }
 }
