@@ -52,7 +52,8 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(-1.499).epsilon(0.0000000001), *f);
     // 39534.3 - 10348.2
     double h = 10348.2 - 39534.3;
-    BigFloat i = BigFloat(10348.2) - BigFloat(39534.3);
+    CHECK(BigFloat(39534.3) > BigFloat(10348.2));
+    BigFloat i = BigFloat(10348.2); i -= BigFloat(39534.3);
     CHECK_EQ(doctest::Approx(h), *i);
   }
   TEST_CASE("Wrap & Unwrap") {

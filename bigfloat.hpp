@@ -204,11 +204,12 @@ struct BigFloat {
       const bool a_greater = *this > b || *this == b;
       sign = sign_a_tmp;
       b.sign = sign_b_tmp;
+      std::cout << a_greater << std::endl;
       if (a_greater) // normal a - b
         perform_mantissa_addition(*this, b, shift_a, shift_b, true);
       else { // we calculate b - a and negate
         perform_mantissa_addition(b, *this, shift_b, shift_a, true);
-        sign = sign ? 0 : 1;
+        sign = sign_a_tmp ? 0 : 1;
       }
     } else {
       // (-a) - b is the same as -(a + b), a - (-b) is the same as a + b (add
