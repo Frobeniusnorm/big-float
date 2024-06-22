@@ -31,3 +31,7 @@
 *.out
 *.app
 test/test
+
+*compile_commands.json
+.cache/
+test/.cache/

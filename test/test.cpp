@@ -2,7 +2,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../bigfloat.hpp"
 #include "doctest.h"
+#include <sycl/sycl.hpp>
 
+using namespace sycl;
 TEST_SUITE("Floating Point semantics") {
   TEST_CASE("Addition") {
     BigFloat a(5.0);
@@ -158,5 +160,52 @@ TEST_SUITE("Floating Point semantics") {
       CHECK_EQ(doctest::Approx(b - a), *(y - x));
       CHECK_EQ(doctest::Approx(a * b), *(x * y));
     }
+  }
+}
+TEST_SUITE("SyCL compatibility") {
+  TEST_CASE("Templated Version") {
+    for (int i = 0; i < 10000; i++) {
+      double a = rand() / 50000.0;
+      double b = rand() / 50000.0;
+      FixedFloat<16> x(a);
+      FixedFloat<16> y(b);
+      // wrap and unwrap
+      CHECK_EQ(a, *x);
+      CHECK_EQ(b, *y);
+      // comparison
+      if (a < b)
+        CHECK(x < y);
+      else if (a > b)
+        CHECK(x > y);
+      else
+        CHECK(x == y);
+      // arithmetic
+      CHECK_EQ(doctest::Approx(a - b), *(x - y));
+      CHECK_EQ(doctest::Approx(a + b), *(x + y));
+      CHECK_EQ(doctest::Approx(a + (-b)), *(x + (-y)));
+      CHECK_EQ(doctest::Approx((-a) + (-b)), *((-x) + (-y)));
+      CHECK_EQ(doctest::Approx((-a) + b), *((-x) + y));
+      CHECK_EQ(doctest::Approx((-a) - b), *((-x) - y));
+      CHECK_EQ(doctest::Approx((-a) - (-b)), *((-x) - (-y)));
+      CHECK_EQ(doctest::Approx(b - a), *(y - x));
+      CHECK_EQ(doctest::Approx(a * b), *(x * y));
+    }
+  }
+  TEST_CASE("In SyCL") {
+
+    default_selector device_selector;
+    queue Q(device_selector);
+    std::vector<double> res(500);
+    buffer image_buffer(res.data(), range<1>{res.size()});
+    Q.submit([&](auto &h) {
+      accessor img(image_buffer, h, write_only, no_init);
+      h.parallel_for(500, [=](item<1> i) {
+        FixedFloat<16> a(5.0);
+        FixedFloat<16> b(i * 2.0);
+        FixedFloat<16> c = a * b;
+	img[i] = *c;
+      });
+    });
+    Q.wait();
   }
 }
