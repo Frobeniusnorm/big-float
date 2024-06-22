@@ -1061,10 +1061,10 @@ template <size_t bytes> struct FixedFloat {
   size_t size_mantissa; // in bytes
   size_t size_exponent; // in bytes
   char sign = 1;
-  char data[bytes]; // exponent, mantissa, i.e. 0 starts at the mantissa,
-                    // it indexes as for byte operations
-  char working_mantissa[(
-      size_t)(bytes / 1.3)]; // needed as interim memory for multiplication
+  std::array<char, bytes> data; // exponent, mantissa, i.e. 0 starts at the
+                                // mantissa, it indexes as for byte operations
+  std::array<char, (size_t)(bytes / 1.3)>
+      working_mantissa; // needed as interim memory for multiplication
   /** adds one to the exponent and shifts mantissa one to the right, the
    * inserted bit is configures by `first_digit` */
   void shift_and_add_exponent(char first_digit) {
