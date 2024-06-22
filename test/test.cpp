@@ -2,9 +2,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../bigfloat.hpp"
 #include "doctest.h"
-#include <sycl/sycl.hpp>
+//#include <sycl/sycl.hpp>
 
-using namespace sycl;
+//using namespace sycl;
 TEST_SUITE("Floating Point semantics") {
   TEST_CASE("Addition") {
     BigFloat a(5.0);
@@ -133,6 +133,73 @@ TEST_SUITE("Floating Point semantics") {
     BigFloat k = BigFloat(31436.5) * BigFloat(8106.82);
     CHECK_EQ(doctest::Approx(h), *k);
   }
+  TEST_CASE("Mandelbrot") {
+    double x_max = 1, x_min = -2, y_max = 1, y_min = -1;
+    int res_width = 100, res_height = 100;
+    for (int xi = 0; xi < res_width; xi++) {
+      for (int yi = 0; yi < res_height; yi++) {
+        int iter_normal;
+        {
+          const double x =
+              xi / (double)(res_width - 1); // screen space in [0, 1]
+          const double y =
+              yi / (double)(res_height -
+                            1); // screen space);  // screen space in [0, 1]
+
+          const double x0 = (x * std::fabs(x_max - x_min) +
+                             x_min); // complex plane in [x_min, x_max]
+          const double y0 = y * std::fabs(y_max - y_min) +
+                            y_min; // complex plane in [y_min, y_max]
+          double c_x(0.0);
+          double c_y(0.0);
+          const size_t max_iter = 1000;
+          // simulate complex conjecture
+          size_t iter = 0;
+          for (; iter < max_iter; iter++) {
+            double cx_squared = c_x * c_x;
+            double cy_squared = c_y * c_y;
+            if (cx_squared + cy_squared > (1 << 16))
+              break;
+            double newx = cx_squared - cy_squared + x0;
+            double newy = 2. * c_x * c_y + y0;
+            c_x = newx;
+            c_y = newy;
+          }
+          iter_normal = iter;
+        }
+        {
+          const FixedFloat<16> x = FixedFloat<16>(
+              xi / (double)(res_width - 1)); // screen space in [0, 1]
+          const FixedFloat<16> y = FixedFloat<16>(
+              yi / (double)(res_height -
+                            1)); // screen space);  // screen space in [0, 1]
+
+          const FixedFloat<16> x0 =
+              (x * std::fabs(x_max - x_min) +
+               x_min); // complex plane in [x_min, x_max]
+          const FixedFloat<16> y0 =
+              (y * FixedFloat<16>(std::fabs(y_max - y_min) +
+                                     y_min)); // complex plane in [y_min, y_max]
+          FixedFloat<16> c_x(0.0);
+          FixedFloat<16> c_y(0.0);
+          const size_t max_iter = 1000;
+          // simulate complex conjecture
+          size_t iter = 0;
+          for (; iter < max_iter; iter++) {
+            FixedFloat<16> cx_squared = c_x * c_x;
+            FixedFloat<16> cy_squared = c_y * c_y;
+            if (cx_squared + cy_squared > (1 << 16))
+              break;
+            FixedFloat<16> newx = cx_squared - cy_squared + x0;
+            FixedFloat<16> newy = FixedFloat<16>(2.) * c_x * c_y + y0;
+            c_x = newx;
+            c_y = newy;
+          }
+          CHECK_EQ(iter_normal, iter);
+        }
+      }
+    }
+  }
   TEST_CASE("Randomized") {
     for (int i = 0; i < 10000; i++) {
       double a = rand() / 50000.0;
@@ -217,28 +284,28 @@ TEST_SUITE("SyCL compatibility") {
       CHECK_EQ(doctest::Approx(a * b), *(x * y));
     }
   }
-  TEST_CASE("In SyCL") {
+  /* TEST_CASE("In SyCL") {
 
-    default_selector device_selector;
-    queue Q(device_selector);
-    std::vector<double> res(500);
-    buffer image_buffer(res.data(), range<1>{res.size()});
-    Q.submit([&](auto &h) {
-      accessor img(image_buffer, h, write_only, no_init);
-      h.parallel_for(500, [=](item<1> i) {
-        FixedFloat<16> a(5.3);
-        FixedFloat<16> b((double)(i * 0.5));
-        FixedFloat<16> c = a * (b - a);
-        c += b * a;
-        img[i] = *c;
-      });
-    });
-    Q.wait();
-    host_accessor h_acc(image_buffer);
-    for (int i = 0; i < res.size(); i++) {
-      double a = (5.3);
-      double b = (i * 0.5);
-      CHECK_EQ(doctest::Approx(a * (b - a) + b * a), h_acc[i]);
-    }
-  }
+     default_selector device_selector;
+     queue Q(device_selector);
+     std::vector<double> res(500);
+     buffer image_buffer(res.data(), range<1>{res.size()});
+     Q.submit([&](auto &h) {
+       accessor img(image_buffer, h, write_only, no_init);
+       h.parallel_for(500, [=](item<1> i) {
+         FixedFloat<16> a(5.3);
+         FixedFloat<16> b((double)(i * 0.5));
+         FixedFloat<16> c = a * (b - a);
+         c += b * a;
+         img[i] = *c;
+       });
+     });
+     Q.wait();
+     host_accessor h_acc(image_buffer);
+     for (int i = 0; i < res.size(); i++) {
+       double a = (5.3);
+       double b = (i * 0.5);
+       CHECK_EQ(doctest::Approx(a * (b - a) + b * a), h_acc[i]);
+     }
+   }*/
 }

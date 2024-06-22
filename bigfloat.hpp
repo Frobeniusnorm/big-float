@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <bitset>
 #include <iostream>
-#include <ostream>
+#include <array>
 #include <vector>
 typedef unsigned long size_t;
 
@@ -1063,7 +1063,7 @@ template <size_t bytes> struct FixedFloat {
   char sign = 1;
   std::array<char, bytes> data; // exponent, mantissa, i.e. 0 starts at the
                                 // mantissa, it indexes as for byte operations
-  std::array<char, (size_t)(bytes / 1.3)>
+  std::array<char, bytes>
       working_mantissa; // needed as interim memory for multiplication
   /** adds one to the exponent and shifts mantissa one to the right, the
    * inserted bit is configures by `first_digit` */
