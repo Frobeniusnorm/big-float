@@ -2,9 +2,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../bigfloat.hpp"
 #include "doctest.h"
-//#include <sycl/sycl.hpp>
+// #include <sycl/sycl.hpp>
 
-//using namespace sycl;
+// using namespace sycl;
 TEST_SUITE("Floating Point semantics") {
   TEST_CASE("Addition") {
     BigFloat a(5.0);
@@ -135,9 +135,9 @@ TEST_SUITE("Floating Point semantics") {
   }
   TEST_CASE("Mandelbrot") {
     double x_max = 1, x_min = -2, y_max = 1, y_min = -1;
-    int res_width = 100, res_height = 100;
-    for (int xi = 0; xi < res_width; xi++) {
-      for (int yi = 0; yi < res_height; yi++) {
+    int res_width = 1920, res_height = 1080;
+    for (int xi = 0; xi < 1; xi++) {
+      for (int yi = 0; yi < 1; yi++) {
         int iter_normal;
         {
           const double x =
@@ -152,12 +152,14 @@ TEST_SUITE("Floating Point semantics") {
                             y_min; // complex plane in [y_min, y_max]
           double c_x(0.0);
           double c_y(0.0);
-          const size_t max_iter = 1000;
+          const size_t max_iter = 10;
           // simulate complex conjecture
           size_t iter = 0;
           for (; iter < max_iter; iter++) {
             double cx_squared = c_x * c_x;
             double cy_squared = c_y * c_y;
+            std::cout << iter << " iteration: " << cx_squared + cy_squared
+                      << std::endl;
             if (cx_squared + cy_squared > (1 << 16))
               break;
             double newx = cx_squared - cy_squared + x0;
@@ -168,27 +170,30 @@ TEST_SUITE("Floating Point semantics") {
           iter_normal = iter;
         }
         {
-          const FixedFloat<16> x = FixedFloat<16>(
+          const FixedFloat<16> x(
               xi / (double)(res_width - 1)); // screen space in [0, 1]
-          const FixedFloat<16> y = FixedFloat<16>(
+          const FixedFloat<16> y(
               yi / (double)(res_height -
                             1)); // screen space);  // screen space in [0, 1]
 
           const FixedFloat<16> x0 =
-              (x * std::fabs(x_max - x_min) +
-               x_min); // complex plane in [x_min, x_max]
+              (x * FixedFloat<16>(std::fabs(x_max - x_min) +
+                                  x_min)); // complex plane in [x_min, x_max]
           const FixedFloat<16> y0 =
               (y * FixedFloat<16>(std::fabs(y_max - y_min) +
-                                     y_min)); // complex plane in [y_min, y_max]
+                                  y_min)); // complex plane in [y_min, y_max]
           FixedFloat<16> c_x(0.0);
           FixedFloat<16> c_y(0.0);
-          const size_t max_iter = 1000;
+          const size_t max_iter = 10;
           // simulate complex conjecture
           size_t iter = 0;
           for (; iter < max_iter; iter++) {
             FixedFloat<16> cx_squared = c_x * c_x;
             FixedFloat<16> cy_squared = c_y * c_y;
-            if (cx_squared + cy_squared > (1 << 16))
+            FixedFloat<16> l = cx_squared + cy_squared;
+            FixedFloat<16> r((double)(1 << 16));
+	    std::cout << *l << " > " << *r << " is " << (l > r) << std::endl;
+            if (l > r)
               break;
             FixedFloat<16> newx = cx_squared - cy_squared + x0;
             FixedFloat<16> newy = FixedFloat<16>(2.) * c_x * c_y + y0;

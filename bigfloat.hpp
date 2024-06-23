@@ -1124,7 +1124,7 @@ template <size_t bytes> struct FixedFloat {
         data[size_mantissa + byte_aj] |= (1 << bit_aj);
     }
   }
-  size_t calculate_mantissa_shift(const FixedFloat<bytes> &b) const {
+  long calculate_mantissa_shift(const FixedFloat<bytes> &b) const {
     // exponent may differ -> the one with the lower exponent has to be right
     // shifted to match the higher
     // count difference between this and b in exponent. If > 0 -> b has to be
