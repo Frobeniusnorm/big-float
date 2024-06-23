@@ -88,11 +88,15 @@ TEST_SUITE("Floating Point semantics") {
     double c = 5.0;
     double d = 3.141592;
     double e = 0.0012345;
+    double f = 8;
+    double g = (1 << 16);
     auto bfa = BigFloat(a);
     auto bfb = BigFloat(b);
     auto bfc = BigFloat(c);
     auto bfd = BigFloat(d);
     auto bfe = BigFloat(e);
+    auto bff = FixedFloat<16>(f);
+    auto bfg = FixedFloat<16>(g);
     CHECK(bfa < bfb);
     CHECK(bfa != bfb);
     CHECK(bfa == bfc);
@@ -132,6 +136,7 @@ TEST_SUITE("Floating Point semantics") {
     double h = 31436.5 * 8106.82;
     BigFloat k = BigFloat(31436.5) * BigFloat(8106.82);
     CHECK_EQ(doctest::Approx(h), *k);
+    CHECK_EQ(0, *(FixedFloat<16>(0) * FixedFloat<16>(0)));
   }
   TEST_CASE("Mandelbrot") {
     double x_max = 1, x_min = -2, y_max = 1, y_min = -1;
@@ -189,10 +194,13 @@ TEST_SUITE("Floating Point semantics") {
           size_t iter = 0;
           for (; iter < max_iter; iter++) {
             FixedFloat<16> cx_squared = c_x * c_x;
+	    std::cout << *c_x << "^2 = " << *cx_squared << std::endl;
             FixedFloat<16> cy_squared = c_y * c_y;
+	    std::cout << *c_y << "^2 = " << *cx_squared << std::endl;
             FixedFloat<16> l = cx_squared + cy_squared;
             FixedFloat<16> r((double)(1 << 16));
-	    std::cout << *l << " > " << *r << " is " << (l > r) << std::endl;
+            std::cout << iter << " iteration: " << *l << std::endl;
+            std::cout << *l << " > " << *r << " is " << (l > r) << std::endl;
             if (l > r)
               break;
             FixedFloat<16> newx = cx_squared - cy_squared + x0;
