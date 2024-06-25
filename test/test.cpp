@@ -110,6 +110,12 @@ TEST_SUITE("Floating Point semantics") {
     FixedFloat<16> c(-1.);
     b += c;
     CHECK_EQ(doctest::Approx(100.).epsilon(0.0000000001), *b);
+	FixedFloat<16> d(-2);
+	FixedFloat<16> e(-1);
+	CHECK_EQ(-4., *(FixedFloat<16>(2.) * d));
+	CHECK_EQ(2., *(d * e));
+	CHECK_EQ(*(FixedFloat<16>(2.) * (d * e)), *((FixedFloat<16>(2.) * d) * e));
+
   }
   TEST_CASE("Multiplication") {
     FixedFloat<16> a(0.5);
@@ -137,9 +143,9 @@ TEST_SUITE("Floating Point semantics") {
   }
   TEST_CASE("Mandelbrot") {
     double x_max = 1, x_min = -2, y_max = 1, y_min = -1;
-    int res_width = 1920, res_height = 1080;
-    for (int xi = 0; xi < 1; xi++) {
-      for (int yi = 0; yi < 1; yi++) {
+    int res_width = 100, res_height = 100;
+    for (int xi = 0; xi < 100; xi++) {
+      for (int yi = 0; yi < 100; yi++) {
         int iter_normal;
         {
           const double x =
@@ -152,7 +158,6 @@ TEST_SUITE("Floating Point semantics") {
                              x_min); // complex plane in [x_min, x_max]
           const double y0 = y * std::fabs(y_max - y_min) +
                             y_min; // complex plane in [y_min, y_max]
-			std::cout << "starting " << x0 << " and " << y0 << std::endl;
           double c_x(0.0);
           double c_y(0.0);
           const size_t max_iter = 10;
@@ -161,13 +166,10 @@ TEST_SUITE("Floating Point semantics") {
           for (; iter < max_iter; iter++) {
             double cx_squared = c_x * c_x;
             double cy_squared = c_y * c_y;
-            std::cout << iter << " iteration: " << cx_squared + cy_squared
-                      << std::endl;
             if (cx_squared + cy_squared > (1 << 16))
               break;
             double newx = cx_squared - cy_squared + x0;
             double newy = 2. * c_x * c_y + y0;
-			std::cout << "updating to " << newx << " and " << newy << std::endl;
             c_x = newx;
             c_y = newy;
           }
@@ -184,7 +186,6 @@ TEST_SUITE("Floating Point semantics") {
               (x * FixedFloat<16>(std::fabs(x_max - x_min)) + FixedFloat<16>(x_min)); // complex plane in [y_min, y_max]
           const FixedFloat<16> y0 =
               (y * FixedFloat<16>(std::fabs(y_max - y_min)) + FixedFloat<16>(y_min)); // complex plane in [y_min, y_max]
-			std::cout << "starting " << *x0 << " and " << *y0 << std::endl;
           FixedFloat<16> c_x(0.0);
           FixedFloat<16> c_y(0.0);
           const size_t max_iter = 10;
@@ -195,14 +196,10 @@ TEST_SUITE("Floating Point semantics") {
             FixedFloat<16> cy_squared = c_y * c_y;
             FixedFloat<16> l = cx_squared + cy_squared;
             FixedFloat<16> r((double)(1 << 16));
-            std::cout << iter << " iteration: " << *l << std::endl;
             if (l > r)
               break;
             FixedFloat<16> newx = cx_squared - cy_squared + x0;
             FixedFloat<16> newy = FixedFloat<16>(2.) * c_x * c_y + y0;
-			std::cout << "c_x * c_y = " << *(c_x * c_y) << std::endl; 
-			std::cout << "2 * c_x * c_y = " << *(FixedFloat<16>(2.) * c_x * c_y) << std::endl; 
-			std::cout << "updating to " << *newx << " and " << *newy << std::endl;
             c_x = newx;
             c_y = newy;
           }

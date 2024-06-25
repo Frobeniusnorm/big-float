@@ -2,9 +2,8 @@
 #define BIG_FLOAT
 #include <algorithm>
 #include <array>
-#include <bitset>
 #include <iostream>
-#include <vector>
+#include <ostream>
 typedef unsigned long size_t;
 
 typedef union DoubleAndLong {
@@ -73,7 +72,7 @@ template <size_t bytes> struct FixedFloat {
         }
       }
     }
-    sign = (init_data & (0x1l << 63)) >> 63;
+    sign = (init_data & (1l << 63)) ? 1 : 0;
   }
   FixedFloat() {
     size_mantissa = (size_t)(bytes / 1.3);
@@ -281,6 +280,8 @@ template <size_t bytes> struct FixedFloat {
   void operator*=(FixedFloat<bytes> b) {
     using namespace std;
     // if exact one is negative, the sign is negative
+	int oldsign = sign;
+	double vala = **this;
     sign = (sign == b.sign) ? 0 : 1;
     if (is_zero())
       return; // do nothing
