@@ -132,7 +132,8 @@ TEST_SUITE("Floating Point semantics") {
     double h = 31436.5 * 8106.82;
     FixedFloat<16> k = FixedFloat<16>(31436.5) * FixedFloat<16>(8106.82);
     CHECK_EQ(doctest::Approx(h), *k);
-    CHECK_EQ(0, *(FixedFloat<16>(0) * FixedFloat<16>(0)));
+	CHECK_EQ(0, *(FixedFloat<16>(0) * FixedFloat<16>(0)));
+    CHECK_EQ(1, *(FixedFloat<16>(-1) * FixedFloat<16>(-1)));
   }
   TEST_CASE("Mandelbrot") {
     double x_max = 1, x_min = -2, y_max = 1, y_min = -1;
@@ -181,10 +182,6 @@ TEST_SUITE("Floating Point semantics") {
               (x * FixedFloat<16>(std::fabs(x_max - x_min)) + FixedFloat<16>(x_min)); // complex plane in [y_min, y_max]
           const FixedFloat<16> y0 =
               (y * FixedFloat<16>(std::fabs(y_max - y_min)) + FixedFloat<16>(y_min)); // complex plane in [y_min, y_max]
-          std::cout << *x << " and " << *y << " (vs."
-                    << xi / (double)(res_width - 1) << " and "
-                    << yi / (double)(res_height - 1) << ") => " << *x0
-                    << " and " << *y0 << std::endl;
           FixedFloat<16> c_x(0.0);
           FixedFloat<16> c_y(0.0);
           const size_t max_iter = 10;
@@ -192,12 +189,26 @@ TEST_SUITE("Floating Point semantics") {
           size_t iter = 0;
           for (; iter < max_iter; iter++) {
             FixedFloat<16> cx_squared = c_x * c_x;
+			for (int i = cx_squared.data.size() - 1; i >= 0; i--)
+				std::cout << std::bitset<8>(c_x.data[i]);
+			std::cout << std::endl;
             std::cout << *c_x << "^2 = " << *cx_squared << std::endl;
             FixedFloat<16> cy_squared = c_y * c_y;
-            std::cout << *c_y << "^2 = " << *cx_squared << std::endl;
+            std::cout << *c_y << "^2 = " << *cy_squared << std::endl;
             FixedFloat<16> l = cx_squared + cy_squared;
+			// the addition of the exponent should keep the leading 1 // TODO
+			for (int i = l.data.size() - 1; i >= 0; i--)
+				std::cout << std::bitset<8>(cx_squared.data[i]);
+			std::cout << std::endl;
+			// TODO a 1 should not have 0xFF exponent, first one should be 0
+			for (int i = l.data.size() - 1; i >= 0; i--)
+				std::cout << std::bitset<8>(cy_squared.data[i]);
+			std::cout << std::endl;
+			for (int i = l.data.size() - 1; i >= 0; i--)
+				std::cout << std::bitset<8>(l.data[i]);
+
             FixedFloat<16> r((double)(1 << 16));
-            std::cout << iter << " iteration: " << *l << std::endl;
+            std::cout << "\n" << iter << " iteration: " << *l << std::endl;
             std::cout << *l << " > " << *r << " is " << (l > r) << std::endl;
             if (l > r)
               break;
