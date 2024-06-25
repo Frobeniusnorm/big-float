@@ -75,9 +75,6 @@ TEST_SUITE("Floating Point semantics") {
     CHECK_EQ(doctest::Approx(31649.6), *FixedFloat<16>(31649.6));
     CHECK_EQ(doctest::Approx(94.8853), *FixedFloat<16>(94.8853));
     FixedFloat<16> zero(0.0);
-    for (int i = 15; i >= 0; i--)
-      std::cout << std::bitset<8>(zero.data[i]);
-    std::cout << std::endl;
     CHECK_EQ(doctest::Approx(0.0), *zero);
   }
   TEST_CASE("Comparison") {
@@ -181,11 +178,13 @@ TEST_SUITE("Floating Point semantics") {
                             1)); // screen space);  // screen space in [0, 1]
 
           const FixedFloat<16> x0 =
-              (x * FixedFloat<16>(std::fabs(x_max - x_min) +
-                                  x_min)); // complex plane in [x_min, x_max]
+              (x * FixedFloat<16>(std::fabs(x_max - x_min)) + FixedFloat<16>(x_min)); // complex plane in [y_min, y_max]
           const FixedFloat<16> y0 =
-              (y * FixedFloat<16>(std::fabs(y_max - y_min) +
-                                  y_min)); // complex plane in [y_min, y_max]
+              (y * FixedFloat<16>(std::fabs(y_max - y_min)) + FixedFloat<16>(y_min)); // complex plane in [y_min, y_max]
+          std::cout << *x << " and " << *y << " (vs."
+                    << xi / (double)(res_width - 1) << " and "
+                    << yi / (double)(res_height - 1) << ") => " << *x0
+                    << " and " << *y0 << std::endl;
           FixedFloat<16> c_x(0.0);
           FixedFloat<16> c_y(0.0);
           const size_t max_iter = 10;
