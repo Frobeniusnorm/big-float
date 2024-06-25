@@ -200,6 +200,8 @@ TEST_SUITE("Floating Point semantics") {
               break;
             FixedFloat<16> newx = cx_squared - cy_squared + x0;
             FixedFloat<16> newy = FixedFloat<16>(2.) * c_x * c_y + y0;
+			std::cout << "c_x * c_y = " << *(c_x * c_y) << std::endl; 
+			std::cout << "2 * c_x * c_y = " << *(FixedFloat<16>(2.) * c_x * c_y) << std::endl; 
 			std::cout << "updating to " << *newx << " and " << *newy << std::endl;
             c_x = newx;
             c_y = newy;

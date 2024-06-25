@@ -280,8 +280,8 @@ template <size_t bytes> struct FixedFloat {
   }
   void operator*=(FixedFloat<bytes> b) {
     using namespace std;
-    // if one is negative, the sign is negative
-    sign = (sign ^ b.sign) ? 1 : 0;
+    // if exact one is negative, the sign is negative
+    sign = (sign == b.sign) ? 0 : 1;
     if (is_zero())
       return; // do nothing
     if (b.is_zero()) {
