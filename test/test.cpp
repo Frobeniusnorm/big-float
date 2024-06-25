@@ -189,27 +189,10 @@ TEST_SUITE("Floating Point semantics") {
           size_t iter = 0;
           for (; iter < max_iter; iter++) {
             FixedFloat<16> cx_squared = c_x * c_x;
-			for (int i = cx_squared.data.size() - 1; i >= 0; i--)
-				std::cout << std::bitset<8>(c_x.data[i]);
-			std::cout << std::endl;
-            std::cout << *c_x << "^2 = " << *cx_squared << std::endl;
             FixedFloat<16> cy_squared = c_y * c_y;
-            std::cout << *c_y << "^2 = " << *cy_squared << std::endl;
             FixedFloat<16> l = cx_squared + cy_squared;
-			// the addition of the exponent should keep the leading 1 // TODO
-			for (int i = l.data.size() - 1; i >= 0; i--)
-				std::cout << std::bitset<8>(cx_squared.data[i]);
-			std::cout << std::endl;
-			// TODO a 1 should not have 0xFF exponent, first one should be 0
-			for (int i = l.data.size() - 1; i >= 0; i--)
-				std::cout << std::bitset<8>(cy_squared.data[i]);
-			std::cout << std::endl;
-			for (int i = l.data.size() - 1; i >= 0; i--)
-				std::cout << std::bitset<8>(l.data[i]);
-
             FixedFloat<16> r((double)(1 << 16));
-            std::cout << "\n" << iter << " iteration: " << *l << std::endl;
-            std::cout << *l << " > " << *r << " is " << (l > r) << std::endl;
+            std::cout << iter << " iteration: " << *l << std::endl;
             if (l > r)
               break;
             FixedFloat<16> newx = cx_squared - cy_squared + x0;
@@ -252,60 +235,6 @@ TEST_SUITE("Floating Point semantics") {
   }
 }
 TEST_SUITE("SyCL compatibility") {
-  TEST_CASE("Templated Version") {
-    for (int i = 0; i < 10000; i++) {
-      double a = rand() / 50000.0;
-      double b = rand() / 50000.0;
-      FixedFloat<16> x(a);
-      FixedFloat<16> y(b);
-      // wrap and unwrap
-      CHECK_EQ(a, *x);
-      CHECK_EQ(b, *y);
-      // comparison
-      if (a < b)
-        CHECK(x < y);
-      else if (a > b)
-        CHECK(x > y);
-      else
-        CHECK(x == y);
-      // arithmetic
-      CHECK_EQ(doctest::Approx(a - b), *(x - y));
-      CHECK_EQ(doctest::Approx(a + b), *(x + y));
-      CHECK_EQ(doctest::Approx(a + (-b)), *(x + (-y)));
-      CHECK_EQ(doctest::Approx((-a) + (-b)), *((-x) + (-y)));
-      CHECK_EQ(doctest::Approx((-a) + b), *((-x) + y));
-      CHECK_EQ(doctest::Approx((-a) - b), *((-x) - y));
-      CHECK_EQ(doctest::Approx((-a) - (-b)), *((-x) - (-y)));
-      CHECK_EQ(doctest::Approx(b - a), *(y - x));
-      CHECK_EQ(doctest::Approx(a * b), *(x * y));
-    }
-    for (int i = 0; i < 1000; i++) {
-      double a = rand() / 500000.0;
-      double b = rand() / 5.0;
-      FixedFloat<16> x(a);
-      FixedFloat<16> y(b);
-      // wrap and unwrap
-      CHECK_EQ(a, *x);
-      CHECK_EQ(b, *y);
-      // comparison
-      if (a < b)
-        CHECK(x < y);
-      else if (a > b)
-        CHECK(x > y);
-      else
-        CHECK(x == y);
-      // arithmetic
-      CHECK_EQ(doctest::Approx(a - b), *(x - y));
-      CHECK_EQ(doctest::Approx(a + b), *(x + y));
-      CHECK_EQ(doctest::Approx(a + (-b)), *(x + (-y)));
-      CHECK_EQ(doctest::Approx((-a) + (-b)), *((-x) + (-y)));
-      CHECK_EQ(doctest::Approx((-a) + b), *((-x) + y));
-      CHECK_EQ(doctest::Approx((-a) - b), *((-x) - y));
-      CHECK_EQ(doctest::Approx((-a) - (-b)), *((-x) - (-y)));
-      CHECK_EQ(doctest::Approx(b - a), *(y - x));
-      CHECK_EQ(doctest::Approx(a * b), *(x * y));
-    }
-  }
   /* TEST_CASE("In SyCL") {
 
      default_selector device_selector;

@@ -312,6 +312,27 @@ template <size_t bytes> struct FixedFloat {
       else
         carry = 0;
     }
+    // and we have to subtract the bias once
+    {
+      bool was_carry = carry;
+      carry = 0;
+      for (size_t i = 0; i < size_exponent * 8; i++) {
+        const size_t byte = i / 8;
+        const char bit = i % 8;
+        const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
+        const char data_b = i < size_exponent * 8 - 1 ? 1 : 0;
+        const char sum = data_a - data_b - carry;
+        if (sum % 2 == 0 || (data_b == 0 && !was_carry &&
+                             sum < 0)) // set to 0 if last bit can't borrow
+          data[size_mantissa + byte] &= ~(1 << bit);
+        else
+          data[size_mantissa + byte] |= (1 << bit);
+        if (sum < 0)
+          carry = 1;
+        else
+          carry = 0;
+      }
+    }
     bool has_one = false; // if the implicit one is present in the result
     // multiply mantissa
     for (size_t i = 0; i < size_mantissa * 8; i++) {
@@ -393,7 +414,7 @@ template <size_t bytes> struct FixedFloat {
       if (sum > 1)
         shift_and_add_exponent((sum % 2 == 0 ? 0 : 1));
       // i have no idea why i would need the following line
-      add_one_to_exponent();
+      // add_one_to_exponent();
     }
   }
 
