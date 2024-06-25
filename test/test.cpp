@@ -152,6 +152,7 @@ TEST_SUITE("Floating Point semantics") {
                              x_min); // complex plane in [x_min, x_max]
           const double y0 = y * std::fabs(y_max - y_min) +
                             y_min; // complex plane in [y_min, y_max]
+			std::cout << "starting " << x0 << " and " << y0 << std::endl;
           double c_x(0.0);
           double c_y(0.0);
           const size_t max_iter = 10;
@@ -166,6 +167,7 @@ TEST_SUITE("Floating Point semantics") {
               break;
             double newx = cx_squared - cy_squared + x0;
             double newy = 2. * c_x * c_y + y0;
+			std::cout << "updating to " << newx << " and " << newy << std::endl;
             c_x = newx;
             c_y = newy;
           }
@@ -182,6 +184,7 @@ TEST_SUITE("Floating Point semantics") {
               (x * FixedFloat<16>(std::fabs(x_max - x_min)) + FixedFloat<16>(x_min)); // complex plane in [y_min, y_max]
           const FixedFloat<16> y0 =
               (y * FixedFloat<16>(std::fabs(y_max - y_min)) + FixedFloat<16>(y_min)); // complex plane in [y_min, y_max]
+			std::cout << "starting " << *x0 << " and " << *y0 << std::endl;
           FixedFloat<16> c_x(0.0);
           FixedFloat<16> c_y(0.0);
           const size_t max_iter = 10;
@@ -197,6 +200,7 @@ TEST_SUITE("Floating Point semantics") {
               break;
             FixedFloat<16> newx = cx_squared - cy_squared + x0;
             FixedFloat<16> newy = FixedFloat<16>(2.) * c_x * c_y + y0;
+			std::cout << "updating to " << *newx << " and " << *newy << std::endl;
             c_x = newx;
             c_y = newy;
           }
