@@ -99,7 +99,7 @@ template <size_t bytes> struct FixedFloat {
       return; // do nothing
     if (is_zero()) {
       // set to b
-      for (size_t i = 0; i < data.size(); i++)
+      for (size_t i = 0; i < size_mantissa + size_exponent; i++)
         data[i] = b.data[i];
       sign = b.sign;
       return;
@@ -138,7 +138,7 @@ template <size_t bytes> struct FixedFloat {
       return; // do nothing
     if (is_zero()) {
       // set to b
-      for (size_t i = 0; i < data.size(); i++)
+      for (size_t i = 0; i < size_mantissa + size_exponent; i++)
         data[i] = b.data[i];
       sign = b.sign ? 0 : 1; // flip bs sign
       return;
@@ -277,17 +277,27 @@ template <size_t bytes> struct FixedFloat {
     res *= b;
     return res;
   }
+  FixedFloat<bytes> operator/(FixedFloat<bytes> b) const {
+    FixedFloat<bytes> res(*this);
+    res /= b;
+    return res;
+  }
+  FixedFloat<bytes> abs() const {
+    FixedFloat<bytes> res(*this);
+    res.sign = 0;
+    return res;
+  }
   void operator*=(FixedFloat<bytes> b) {
     using namespace std;
     // if exact one is negative, the sign is negative
-	int oldsign = sign;
-	double vala = **this;
+    int oldsign = sign;
+    double vala = **this;
     sign = (sign == b.sign) ? 0 : 1;
     if (is_zero())
       return; // do nothing
     if (b.is_zero()) {
       // set to zero
-      for (size_t i = 0; i < data.size(); i++)
+      for (size_t i = 0; i < size_mantissa + size_exponent; i++)
         data[i] = 0;
       return;
     }
@@ -419,14 +429,145 @@ template <size_t bytes> struct FixedFloat {
     }
   }
 
+  void operator/=(FixedFloat<bytes> b) {
+    using namespace std;
+    // if exact one is negative, the sign is negative
+    int oldsign = sign;
+    double vala = **this;
+    sign = (sign == b.sign) ? 0 : 1;
+    if (is_zero())
+      return; // do nothing
+    if (b.is_zero()) {
+      // set to zero
+      for (size_t i = 0; i < size_mantissa + size_exponent; i++)
+        data[i] = 0;
+      return;
+    }
+    // we put the mantissa of a in its working mantissa
+    for (size_t i = 0; i < size_mantissa; i++) {
+      working_mantissa[i] = data[i];
+      data[i] = 0;
+    }
+    // subtract exponents
+    char carry = 0;
+    for (size_t i = 0; i < size_exponent * 8; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
+      const char data_b = (b.data[size_mantissa + byte] & (1l << bit)) >> bit;
+      const char sum = data_a - data_b - carry;
+      if (sum % 2 == 0)
+        data[size_mantissa + byte] &= ~(1 << bit);
+      else
+        data[size_mantissa + byte] |= (1 << bit);
+      if (sum < 0)
+        carry = 1;
+      else
+        carry = 0;
+    }
+    // and we have to sdd ubtract the bias once
+    {
+      bool was_carry = carry;
+      carry = 0;
+      for (size_t i = 0; i < size_exponent * 8; i++) {
+        const size_t byte = i / 8;
+        const char bit = i % 8;
+        const char data_a = (data[size_mantissa + byte] & (1l << bit)) >> bit;
+        const char data_b = i < size_exponent * 8 - 1 ? 1 : 0;
+        const char sum = data_a + data_b + carry;
+        if (sum % 2 == 0)
+          data[size_mantissa + byte] &= ~(1 << bit);
+        else
+          data[size_mantissa + byte] |= (1 << bit);
+        if (sum > 1)
+          carry = 1;
+        else
+          carry = 0;
+      }
+    }
+    // divide mantissa
+    for (size_t i = 0; i < size_mantissa * 8; i++) {
+      const size_t byte = i / 8;
+      const char bit = i % 8;
+      if (working_mantissa[byte] & (1 << bit)) {
+        // sub complete b, shifted by (i + 1) in reverse order
+        const size_t shift_b = size_mantissa * 8 - i;
+        char carry = 0;
+        // we set carry to 1 if we want to round
+        {
+          int round = 0;
+          for (int k = 0; k < 3; k++) {
+            if (shift_b > k) {
+              const size_t byte_bj = (shift_b - 1 - k) / 8;
+              const char bit_bj = (shift_b - 1 - k) % 8;
+              const char data = (b.data[byte_bj] & (1 << bit_bj)) >> bit_bj;
+              if (data)
+                round |= (1 << (2 - k));
+            }
+          }
+          if (round >= 4)
+            carry = 1;
+        }
+        // add b shifted to the result
+        for (size_t j = 0; j < size_mantissa * 8; j++) {
+          const size_t byte_aj = j / 8;
+          const size_t bit_aj = j % 8;
+          const size_t byte_bj = (j + shift_b) / 8;
+          const size_t bit_bj = (j + shift_b) % 8;
+          char data_bj;
+          if (j + shift_b == size_mantissa * 8)
+            data_bj = 1;
+          else if (j + shift_b < size_mantissa * 8)
+            data_bj = ((b.data[byte_bj] & (1 << bit_bj)) >> bit_bj);
+          else
+            data_bj = 0;
+          const char data_aj = (data[byte_aj] & (1 << bit_aj)) >> bit_aj;
+          const char sum = data_aj - data_bj - carry;
+          if (sum < 0)
+            carry = 1;
+          else
+            carry = 0;
+          if (sum % 2 == 0)
+            data[byte_aj] &= ~(1 << bit_aj);
+          else
+            data[byte_aj] |= (1 << bit_aj);
+        }
+        if (carry)
+          // if carry is still set -> we carry to 1., which becomes 0., we have
+          // to complete the leading one
+          normalize();
+      }
+    }
+    // sub complete mantissa again because 1.
+    {
+      char carry = 0;
+      for (size_t i = 0; i < size_mantissa * 8; i++) {
+        const size_t byte = i / 8;
+        const size_t bit = i % 8;
+        const char data_b = (b.data[byte] & (1 << bit)) >> bit;
+        const char data_a = (data[byte] & (1 << bit)) >> bit;
+        const char sum = data_a - data_b - carry;
+        if (sum < 0)
+          carry = 1;
+        else
+          carry = 0;
+        if (sum % 2 == 0)
+          data[byte] &= ~(1 << bit);
+        else
+          data[byte] |= (1 << bit);
+      }
+      // we have 1.a - 1.b - carry.0
+      if (carry)
+        normalize();
+    }
+  }
   // protected:
   size_t size_mantissa; // in bytes
   size_t size_exponent; // in bytes
   char sign = 1;
-  std::array<char, bytes> data; // exponent, mantissa, i.e. 0 starts at the
+  char data[bytes];             // exponent, mantissa, i.e. 0 starts at the
                                 // mantissa, it indexes as for byte operations
-  std::array<char, bytes>
-      working_mantissa; // needed as interim memory for multiplication
+  char working_mantissa[bytes]; // needed as interim memory for multiplication
   /** adds one to the exponent and shifts mantissa one to the right, the
    * inserted bit is configures by `first_digit` */
   void shift_and_add_exponent(char first_digit) {
@@ -449,6 +590,27 @@ template <size_t bytes> struct FixedFloat {
       data[size_mantissa - 1] &= ~(1 << 7);
     // add one to exponent
     add_one_to_exponent();
+  }
+  void shift_and_sub_exponent(char first_digit) {
+    // shift mantissa
+    for (long j = 1; j < size_mantissa * 8; j++) {
+      const size_t byte_aj = j / 8;
+      const size_t bit_aj = j % 8;
+      const size_t byte_dj = (j - 1) / 8;
+      const size_t bit_dj = (j - 1) % 8;
+      const char data_a = data[byte_aj] & (1 << bit_aj);
+      if (data_a)
+        data[byte_dj] |= 1 << bit_dj;
+      else
+        data[byte_dj] &= ~(1 << bit_dj);
+    }
+    if (first_digit)
+      // set first bit to 1
+      data[size_mantissa - 1] |= (1 << 7);
+    else
+      data[size_mantissa - 1] &= ~(1 << 7);
+    // add one to exponent
+    sub_one_from_exponent();
   }
   void add_one_to_exponent() {
     char carry = 1;

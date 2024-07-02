@@ -2,9 +2,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "../bigfloat.hpp"
 #include "doctest.h"
-// #include <sycl/sycl.hpp>
-
-// using namespace sycl;
 TEST_SUITE("Floating Point semantics") {
   TEST_CASE("Addition") {
     FixedFloat<16> a(5.0);
@@ -141,6 +138,21 @@ TEST_SUITE("Floating Point semantics") {
 	CHECK_EQ(0, *(FixedFloat<16>(0) * FixedFloat<16>(0)));
     CHECK_EQ(1, *(FixedFloat<16>(-1) * FixedFloat<16>(-1)));
   }
+  TEST_CASE("Division") {
+    FixedFloat<16> a(2.);
+    FixedFloat<16> b(0.5);
+	a /= b;
+	CHECK_EQ(4., *a);
+    FixedFloat<16> c(4);
+	a /= c;
+	CHECK_EQ(1., *a);
+	FixedFloat<16> d(3.141592);
+	FixedFloat<16> e(0.123123);
+	CHECK_EQ(doctest::Approx(3.141592 / 4), *(d / c));
+	CHECK_EQ(doctest::Approx(3.141592 / 1), *(d / a));
+	CHECK_EQ(doctest::Approx(3.141592 / 0.123123), *(d / e));
+	CHECK_EQ(doctest::Approx(0.123123 / 3.141592), *(e / d));
+  }
   TEST_CASE("Mandelbrot") {
     double x_max = 1, x_min = -2, y_max = 1, y_min = -1;
     int res_width = 100, res_height = 100;
@@ -234,32 +246,34 @@ TEST_SUITE("Floating Point semantics") {
       CHECK_EQ(doctest::Approx((-a) - (-b)), *((-x) - (-y)));
       CHECK_EQ(doctest::Approx(b - a), *(y - x));
       CHECK_EQ(doctest::Approx(a * b), *(x * y));
+	//  if (y != 0)
+	//	CHECK_EQ(doctest::Approx(a / b), *(x / y));
     }
   }
 }
-TEST_SUITE("SyCL compatibility") {
-  /* TEST_CASE("In SyCL") {
-
-     default_selector device_selector;
-     queue Q(device_selector);
-     std::vector<double> res(500);
-     buffer image_buffer(res.data(), range<1>{res.size()});
-     Q.submit([&](auto &h) {
-       accessor img(image_buffer, h, write_only, no_init);
-       h.parallel_for(500, [=](item<1> i) {
-         FixedFloat<16> a(5.3);
-         FixedFloat<16> b((double)(i * 0.5));
-         FixedFloat<16> c = a * (b - a);
-         c += b * a;
-         img[i] = *c;
-       });
-     });
-     Q.wait();
-     host_accessor h_acc(image_buffer);
-     for (int i = 0; i < res.size(); i++) {
-       double a = (5.3);
-       double b = (i * 0.5);
-       CHECK_EQ(doctest::Approx(a * (b - a) + b * a), h_acc[i]);
-     }
-   }*/
-}
+//TEST_SUITE("SyCL compatibility") {
+//  TEST_CASE("In SyCL") {
+//
+//     default_selector device_selector;
+//     queue Q(device_selector);
+//     std::vector<double> res(500);
+//     buffer image_buffer(res.data(), range<1>{res.size()});
+//     Q.submit([&](auto &h) {
+//       accessor img(image_buffer, h, write_only, no_init);
+//       h.parallel_for(500, [=](item<1> i) {
+//         FixedFloat<16> a(5.3);
+//         FixedFloat<16> b((double)(i * 0.5));
+//         FixedFloat<16> c = a * (b - a);
+//         c += b * a;
+//         img[i] = *c;
+//       });
+//     });
+//     Q.wait();
+//     host_accessor h_acc(image_buffer);
+//     for (int i = 0; i < res.size(); i++) {
+//       double a = (5.3);
+//       double b = (i * 0.5);
+//       CHECK_EQ(doctest::Approx(a * (b - a) + b * a), h_acc[i]);
+//     }
+//   }
+// }
