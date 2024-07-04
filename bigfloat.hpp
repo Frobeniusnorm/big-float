@@ -465,7 +465,7 @@ template <size_t bytes> struct FixedFloat {
       else
         carry = 0;
     }
-    // and we have to sdd ubtract the bias once
+    // and we have to add the bias once
     {
       bool was_carry = carry;
       carry = 0;
@@ -485,81 +485,11 @@ template <size_t bytes> struct FixedFloat {
           carry = 0;
       }
     }
-    // divide mantissa
-    for (size_t i = 0; i < size_mantissa * 8; i++) {
-      const size_t byte = i / 8;
-      const char bit = i % 8;
-      if (working_mantissa[byte] & (1 << bit)) {
-        // sub complete b, shifted by (i + 1) in reverse order
-        const size_t shift_b = size_mantissa * 8 - i;
-        char carry = 0;
-        // we set carry to 1 if we want to round
-        {
-          int round = 0;
-          for (int k = 0; k < 3; k++) {
-            if (shift_b > k) {
-              const size_t byte_bj = (shift_b - 1 - k) / 8;
-              const char bit_bj = (shift_b - 1 - k) % 8;
-              const char data = (b.data[byte_bj] & (1 << bit_bj)) >> bit_bj;
-              if (data)
-                round |= (1 << (2 - k));
-            }
-          }
-          if (round >= 4)
-            carry = 1;
-        }
-        // add b shifted to the result
-        for (size_t j = 0; j < size_mantissa * 8; j++) {
-          const size_t byte_aj = j / 8;
-          const size_t bit_aj = j % 8;
-          const size_t byte_bj = (j + shift_b) / 8;
-          const size_t bit_bj = (j + shift_b) % 8;
-          char data_bj;
-          if (j + shift_b == size_mantissa * 8)
-            data_bj = 1;
-          else if (j + shift_b < size_mantissa * 8)
-            data_bj = ((b.data[byte_bj] & (1 << bit_bj)) >> bit_bj);
-          else
-            data_bj = 0;
-          const char data_aj = (data[byte_aj] & (1 << bit_aj)) >> bit_aj;
-          const char sum = data_aj - data_bj - carry;
-          if (sum < 0)
-            carry = 1;
-          else
-            carry = 0;
-          if (sum % 2 == 0)
-            data[byte_aj] &= ~(1 << bit_aj);
-          else
-            data[byte_aj] |= (1 << bit_aj);
-        }
-        if (carry)
-          // if carry is still set -> we carry to 1., which becomes 0., we have
-          // to complete the leading one
-          normalize();
-      }
-    }
-    // sub complete mantissa again because 1.
-    {
-      char carry = 0;
-      for (size_t i = 0; i < size_mantissa * 8; i++) {
-        const size_t byte = i / 8;
-        const size_t bit = i % 8;
-        const char data_b = (b.data[byte] & (1 << bit)) >> bit;
-        const char data_a = (data[byte] & (1 << bit)) >> bit;
-        const char sum = data_a - data_b - carry;
-        if (sum < 0)
-          carry = 1;
-        else
-          carry = 0;
-        if (sum % 2 == 0)
-          data[byte] &= ~(1 << bit);
-        else
-          data[byte] |= (1 << bit);
-      }
-      // we have 1.a - 1.b - carry.0
-      if (carry)
-        normalize();
-    }
+    // For simplicity: shift both a and b two bits to the right and add leading
+    // one (REMEMBER bit of b to restore b) if mantissa of a < mantissa b:
+    // subtract one from exponent and shift b by another one Non Restoring
+    // division
+    // https://www.geeksforgeeks.org/implementation-of-non-restoring-division-algorithm-for-unsigned-integer/:w
   }
   // protected:
   size_t size_mantissa; // in bytes
